@@ -15,7 +15,7 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
     [ExportMetadata("Name", "SeeDither After Exposures")]
     [ExportMetadata("Description", "Dithers via absolute GoTo offsets; designed for Seestar mounts.")]
     [ExportMetadata("Icon", "DitherSVG")]
-    [ExportMetadata("Category", "Telescope")]
+    [ExportMetadata("Category", "SeeDither")]
     [Export(typeof(ISequenceTrigger))]
     [JsonObject(MemberSerialization.OptIn)]
     public class SeeDitherAfterExposuresTrigger : SequenceTrigger {
