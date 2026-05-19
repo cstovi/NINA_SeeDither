@@ -2,57 +2,65 @@
                     x:Class="NINA.Plugin.SeeDither.Resources"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:triggers="clr-namespace:NINA.Plugin.SeeDither.Sequencer.Triggers">
+                    xmlns:triggers="clr-namespace:NINA.Plugin.SeeDither.Sequencer.Triggers"
+                    xmlns:local="clr-namespace:NINA.Plugin.SeeDither"
+                    xmlns:nina="clr-namespace:NINA.View.Sequencer;assembly=NINA.Sequencer">
 
-    <DrawingImage x:Key="DitherSVG">
-        <DrawingImage.Drawing>
-            <GeometryDrawing Brush="White">
-                <GeometryDrawing.Geometry>
-                    <CombinedGeometry GeometryCombineMode="Union">
-                        <CombinedGeometry.Geometry1>
-                            <PathGeometry>
-                                <PathFigure StartPoint="10,2">
-                                    <LineSegment Point="18,10" />
-                                    <LineSegment Point="14,10" />
-                                    <LineSegment Point="14,22" />
-                                    <LineSegment Point="10,22" />
-                                    <LineSegment Point="10,10" />
-                                    <LineSegment Point="6,10" />
-                                    <LineSegment Point="2,10" />
-                                </PathFigure>
-                            </PathGeometry>
-                        </CombinedGeometry.Geometry1>
-                        <CombinedGeometry.Geometry2>
-                            <PathGeometry>
-                                <PathFigure StartPoint="10,2">
-                                    <LineSegment Point="10,18" />
-                                </PathFigure>
-                            </PathGeometry>
-                        </CombinedGeometry.Geometry2>
-                    </CombinedGeometry>
-                </GeometryDrawing.Geometry>
-            </GeometryDrawing>
-        </DrawingImage.Drawing>
-    </DrawingImage>
+    <GeometryGroup x:Key="DitherSVG" FillRule="Nonzero">
+        <PathGeometry Figures="M10,2 L18,10 14,10 14,22 10,22 10,10 6,10 2,10 Z M10,2 L10,18"/>
+    </GeometryGroup>
 
     <DataTemplate DataType="{x:Type triggers:SeeDitherAfterExposuresTrigger}">
-        <StackPanel Margin="10">
-            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="Enabled" Margin="0,0,0,8" />
+        <nina:SequenceBlockView>
+            <nina:SequenceBlockView.SequenceItemContent>
+                <StackPanel Orientation="Horizontal" Margin="8,2,0,0">
+                    <TextBlock Text="After exposures:" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                    <TextBox Text="{Binding ExposuresBetween, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Width="40" VerticalAlignment="Center"/>
+                </StackPanel>
+            </nina:SequenceBlockView.SequenceItemContent>
+            <nina:SequenceBlockView.SequenceItemProgressContent>
+                <StackPanel Orientation="Horizontal" Margin="8,2,0,0">
+                    <TextBlock Text="{Binding ProgressText}" VerticalAlignment="Center" FontWeight="Bold"/>
+                </StackPanel>
+            </nina:SequenceBlockView.SequenceItemProgressContent>
+        </nina:SequenceBlockView>
+    </DataTemplate>
 
-            <Label Content="Exposures Between" Target="{Binding ElementName=numExposuresBetween}" />
-            <TextBox x:Name="numExposuresBetween" Text="{Binding ExposuresBetween, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+    <DataTemplate x:Key="SeeDither_Options" DataType="{x:Type local:SeeDitherPlugin}">
+        <StackPanel Margin="8" MaxWidth="500">
+            <TextBlock Text="Settings" FontWeight="Bold" Margin="0,0,0,12"/>
 
-            <Label Content="Min Offset (arcsec)" Target="{Binding ElementName=numMinOffset}" />
-            <TextBox x:Name="numMinOffset" Text="{Binding MinOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="160"/>
+                    <ColumnDefinition Width="80"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-            <Label Content="Max Offset (arcsec)" Target="{Binding ElementName=numMaxOffset}" />
-            <TextBox x:Name="numMaxOffset" Text="{Binding MaxOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Settle Seconds:" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding SettingsInstance.SlewSettleSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="0,0,0,4"/>
+                <TextBlock Grid.Row="0" Grid.Column="2" Text="default 2.0" Foreground="#888" VerticalAlignment="Center" Margin="8,0,0,4" FontSize="11"/>
 
-            <Label Content="Plate Scale (arcsec/px)" Target="{Binding ElementName=numPlateScale}" />
-            <TextBox x:Name="numPlateScale" Text="{Binding PlateScaleArcSecPerPx, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Min Offset (arcsec):" VerticalAlignment="Center" Margin="0,4,8,4"/>
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding SettingsInstance.MinOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" VerticalAlignment="Center" Margin="0,4,0,4"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SettingsInstance.MinOffsetPixels, StringFormat='~{0:F1} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4" FontSize="11"/>
 
-            <Label Content="Settle Seconds" Target="{Binding ElementName=numSettleSeconds}" />
-            <TextBox x:Name="numSettleSeconds" Text="{Binding SlewSettleSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Max Offset (arcsec):" VerticalAlignment="Center" Margin="0,4,8,4"/>
+                <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding SettingsInstance.MaxOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" VerticalAlignment="Center" Margin="0,4,0,4"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding SettingsInstance.MaxOffsetPixels, StringFormat='~{0:F1} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4" FontSize="11"/>
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Text="Plate Scale (&quot;/px):" VerticalAlignment="Center" Margin="0,4,8,4"/>
+                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding SettingsInstance.PlateScaleArcSecPerPx, Mode=TwoWay, UpdateSourceTrigger=LostFocus}" VerticalAlignment="Center" Margin="0,4,0,4"/>
+                <TextBlock Grid.Row="3" Grid.Column="2" Text="S30 default 3.99" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4" FontSize="11"/>
+
+            </Grid>
         </StackPanel>
     </DataTemplate>
 

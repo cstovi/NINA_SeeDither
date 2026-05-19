@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NINA.Astrometry;
 using NINA.Core.Model;
+using NINA.Equipment.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin.SeeDither.Utility;
 using NINA.Sequencer.Container;
@@ -12,6 +13,7 @@ using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Trigger;
 
 namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
+    [Export]
     [ExportMetadata("Name", "SeeDither After Exposures")]
     [ExportMetadata("Description", "Dithers via absolute GoTo offsets; designed for Seestar mounts.")]
     [ExportMetadata("Icon", "DitherSVG")]
@@ -19,84 +21,84 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
     [Export(typeof(ISequenceTrigger))]
     [JsonObject(MemberSerialization.OptIn)]
     public class SeeDitherAfterExposuresTrigger : SequenceTrigger {
+        private readonly ITelescopeMediator _telescopeMediator;
         private readonly Random _rng = new Random();
         private int _exposureCounter = 0;
-        private Coordinates _baseCoords = null;
         private readonly object _stateLock = new object();
 
-        [JsonProperty]
-        public bool Enabled {
-            get => SeeDitherPlugin.Settings?.Enabled ?? true;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.Enabled = value; OnPropertyChanged(nameof(Enabled)); } }
-        }
+        private int _exposuresBetween = 2;
+        private int _currentCount = 0;
 
         [JsonProperty]
         public int ExposuresBetween {
-            get => SeeDitherPlugin.Settings?.ExposuresBetween ?? 2;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.ExposuresBetween = value; OnPropertyChanged(nameof(ExposuresBetween)); } }
+            get => _exposuresBetween;
+            set {
+                if (_exposuresBetween != value) {
+                    _exposuresBetween = Math.Max(1, value);
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ProgressText));
+                }
+            }
         }
 
-        [JsonProperty]
-        public double MinOffsetArcsec {
-            get => SeeDitherPlugin.Settings?.MinOffsetArcsec ?? 5.0;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.MinOffsetArcsec = value; OnPropertyChanged(nameof(MinOffsetArcsec)); } }
+        public int CurrentCount {
+            get => _currentCount;
+            private set {
+                if (_currentCount != value) {
+                    _currentCount = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ProgressText));
+                }
+            }
         }
 
-        [JsonProperty]
-        public double MaxOffsetArcsec {
-            get => SeeDitherPlugin.Settings?.MaxOffsetArcsec ?? 60.0;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.MaxOffsetArcsec = value; OnPropertyChanged(nameof(MaxOffsetArcsec)); } }
-        }
-
-        [JsonProperty]
-        public double PlateScaleArcSecPerPx {
-            get => SeeDitherPlugin.Settings?.PlateScaleArcSecPerPx ?? 2.39;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.PlateScaleArcSecPerPx = value; OnPropertyChanged(nameof(PlateScaleArcSecPerPx)); } }
-        }
-
-        [JsonProperty]
-        public double SlewSettleSeconds {
-            get => SeeDitherPlugin.Settings?.SlewSettleSeconds ?? 2.0;
-            set { if (SeeDitherPlugin.Settings != null) { SeeDitherPlugin.Settings.SlewSettleSeconds = value; OnPropertyChanged(nameof(SlewSettleSeconds)); } }
-        }
+        public string ProgressText => $"{CurrentCount}/{ExposuresBetween}";
 
         [ImportingConstructor]
-        public SeeDitherAfterExposuresTrigger() : base() { }
+        public SeeDitherAfterExposuresTrigger(ITelescopeMediator telescopeMediator) : base() {
+            _telescopeMediator = telescopeMediator;
+        }
 
-        private SeeDitherAfterExposuresTrigger(SeeDitherAfterExposuresTrigger copyMe) : this() { }
+        private SeeDitherAfterExposuresTrigger(SeeDitherAfterExposuresTrigger copyMe) : this(copyMe._telescopeMediator) {
+            _exposuresBetween = copyMe._exposuresBetween;
+        }
 
         public override object Clone() => new SeeDitherAfterExposuresTrigger(this) { Icon = Icon, Name = Name, Category = Category, Description = Description };
 
         public override void Initialize() {
             lock (_stateLock) {
                 _exposureCounter = 0;
-                _baseCoords = null;
+                _currentCount = 0;
             }
             SeeDitherLog.Info("Trigger initialized.");
         }
 
         public override void Teardown() {
             lock (_stateLock) {
-                _baseCoords = null;
                 _exposureCounter = 0;
+                _currentCount = 0;
             }
             SeeDitherLog.Info("Trigger torn down.");
         }
 
         public override bool ShouldTrigger(ISequenceItem previousItem, ISequenceItem nextItem) {
             try {
-                if (!Enabled) return false;
                 if (previousItem == null) return false;
 
                 string typeName = previousItem.GetType().Name;
                 bool isExposure = typeName.Contains("TakeExposure") || typeName.Contains("Exposure");
                 if (!isExposure) return false;
 
+                bool shouldFire;
                 lock (_stateLock) {
                     _exposureCounter++;
                     int interval = Math.Max(1, ExposuresBetween);
-                    return _exposureCounter % interval == 0;
+                    shouldFire = (_exposureCounter % interval == 0);
+                    _currentCount = shouldFire ? 0 : _exposureCounter % interval;
                 }
+                OnPropertyChanged(nameof(CurrentCount));
+                OnPropertyChanged(nameof(ProgressText));
+                return shouldFire;
             } catch (Exception ex) {
                 SeeDitherLog.Error("ShouldTrigger failed", ex);
                 return false;
@@ -107,71 +109,48 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
             try {
                 token.ThrowIfCancellationRequested();
 
-                var telescope = Mediators.TelescopeMediator;
-                if (telescope == null) {
+                if (_telescopeMediator == null) {
                     SeeDitherLog.Error("Telescope mediator is null.");
                     return;
                 }
 
-                var info = telescope.GetInfo();
+                var info = _telescopeMediator.GetInfo();
                 if (info == null || !info.Connected) {
                     SeeDitherLog.Warn("Telescope not connected; skipping dither.");
                     return;
                 }
 
-                lock (_stateLock) {
-                    if (_baseCoords == null && context != null) {
-                        var parent = context as ISequenceItem;
-                        Coordinates found = null;
-
-                        while (parent != null) {
-                            var targetType = parent.GetType();
-                            var targetProp = targetType.GetProperty("Target");
-                            if (targetProp != null) {
-                            var targetObj = targetProp.GetValue(parent);
-                            if (targetObj != null) {
-                                var coordsProp = targetObj.GetType().GetProperty("Coordinates") ?? targetObj.GetType().GetProperty("InputCoordinates");
-                                if (coordsProp != null) {
-                                    found = coordsProp.GetValue(targetObj) as Coordinates;
-                                    break;
-                                }
-                            }
-                            }
-                            parent = parent.Parent;
-                        }
-
-                        if (found != null) {
-                            _baseCoords = new Coordinates(Angle.ByHours(found.RA), Angle.ByDegree(found.Dec), found.Epoch);
-                        } else {
-                            _baseCoords = new Coordinates(Angle.ByHours(info.RightAscension), Angle.ByDegree(info.Declination), Epoch.JNOW);
-                            SeeDitherLog.Warn("Base coordinates captured from telescope, not target.");
-                        }
-                    }
-
-                    if (_baseCoords == null) {
-                        _baseCoords = new Coordinates(Angle.ByHours(info.RightAscension), Angle.ByDegree(info.Declination), Epoch.JNOW);
-                    }
+                var baseCoords = _telescopeMediator.GetCurrentPosition();
+                if (baseCoords == null) {
+                    SeeDitherLog.Error("GetCurrentPosition returned null.");
+                    return;
                 }
+                SeeDitherLog.Info($"Base coordinates: RA={baseCoords.RAString} Dec={baseCoords.DecString}");
 
-                if (MinOffsetArcsec >= MaxOffsetArcsec) {
+                var settings = SeeDitherPlugin.Settings;
+                double minOffset = settings?.MinOffsetArcsec ?? 5.0;
+                double maxOffset = settings?.MaxOffsetArcsec ?? 60.0;
+                double settleSeconds = settings?.SlewSettleSeconds ?? 2.0;
+
+                if (minOffset >= maxOffset) {
                     SeeDitherLog.Error("Invalid offset range: Min >= Max.");
                     return;
                 }
 
-                var (raArc, decArc) = AstrometryOffset.GenerateRandomOffset(_rng, MinOffsetArcsec, MaxOffsetArcsec);
+                var (raArc, decArc) = AstrometryOffset.GenerateRandomOffset(_rng, minOffset, maxOffset);
 
-                Coordinates target;
-                lock (_stateLock) {
-                    target = AstrometryOffset.ApplyOffset(_baseCoords, raArc, decArc);
-                }
+                Coordinates target = AstrometryOffset.ApplyOffset(baseCoords, raArc, decArc);
 
                 SeeDitherLog.Info($"Dithering by RA={raArc:F1}\" Dec={decArc:F1}\" → RA={target.RAString} Dec={target.DecString}");
 
                 progress?.Report(new ApplicationStatus { Status = "SeeDither: slewing offset" });
 
+                SeeDitherLog.Info($"CanSlew={info.CanSlew}, TrackingEnabled={info.TrackingEnabled}, AtPark={info.AtPark}");
+
                 bool ok = false;
                 try {
-                    ok = await telescope.SlewToCoordinatesAsync(target, token);
+                    ok = await _telescopeMediator.SlewToCoordinatesAsync(target, token);
+                    SeeDitherLog.Info($"SlewToCoordinatesAsync returned: {ok}");
                 } catch (OperationCanceledException) {
                     throw;
                 } catch (Exception ex) {
@@ -182,8 +161,11 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                     SeeDitherLog.Warn("SlewToCoordinatesAsync returned false.");
                 }
 
-                if (SlewSettleSeconds > 0) {
-                    await Task.Delay(TimeSpan.FromSeconds(SlewSettleSeconds), token);
+                var newPos = _telescopeMediator.GetCurrentPosition();
+                SeeDitherLog.Info($"Post-slew position: RA={newPos?.RAString} Dec={newPos?.DecString}");
+
+                if (settleSeconds > 0) {
+                    await Task.Delay(TimeSpan.FromSeconds(settleSeconds), token);
                 }
 
                 progress?.Report(new ApplicationStatus { Status = string.Empty });
@@ -194,6 +176,6 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
             }
         }
 
-        public override string ToString() => $"Category: {Category}, Item: SeeDitherAfterExposuresTrigger, Enabled: {Enabled}, Every: {ExposuresBetween}, Range: [{MinOffsetArcsec},{MaxOffsetArcsec}] arcsec";
+        public override string ToString() => $"Category: {Category}, Item: SeeDitherAfterExposuresTrigger, Every: {ExposuresBetween}";
     }
 }

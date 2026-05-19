@@ -13,7 +13,7 @@ namespace NINA.Plugin.SeeDither {
         private int _exposuresBetween = 2;
         private double _minOffsetArcsec = 5.0;
         private double _maxOffsetArcsec = 60.0;
-        private double _plateScaleArcSecPerPx = 2.39;
+        private double _plateScaleArcSecPerPx = 3.99;
         private double _slewSettleSeconds = 2.0;
 
         [field: NonSerialized]
@@ -46,6 +46,7 @@ namespace NINA.Plugin.SeeDither {
                 if (_minOffsetArcsec != clamped) {
                     _minOffsetArcsec = clamped;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(MinOffsetPixels));
                     Save();
                 }
             }
@@ -59,6 +60,7 @@ namespace NINA.Plugin.SeeDither {
                 if (_maxOffsetArcsec != clamped) {
                     _maxOffsetArcsec = clamped;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(MaxOffsetPixels));
                     Save();
                 }
             }
@@ -71,6 +73,8 @@ namespace NINA.Plugin.SeeDither {
                 if (_plateScaleArcSecPerPx != clamped) {
                     _plateScaleArcSecPerPx = clamped;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(MinOffsetPixels));
+                    OnPropertyChanged(nameof(MaxOffsetPixels));
                     Save();
                 }
             }
@@ -87,6 +91,10 @@ namespace NINA.Plugin.SeeDither {
                 }
             }
         }
+
+        public double MinOffsetPixels => MinOffsetArcsec / PlateScaleArcSecPerPx;
+
+        public double MaxOffsetPixels => MaxOffsetArcsec / PlateScaleArcSecPerPx;
 
         public event PropertyChangedEventHandler PropertyChanged;
 

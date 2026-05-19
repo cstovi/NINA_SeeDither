@@ -4,30 +4,26 @@ using System.Windows;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
-using NINA.Plugin.SeeDither.Utility;
 using NINA.Profile.Interfaces;
 
 namespace NINA.Plugin.SeeDither {
     [Export(typeof(IPluginManifest))]
     public class SeeDitherPlugin : PluginBase {
-        private readonly IProfileService _profileService;
-        private readonly ITelescopeMediator _telescopeMediator;
+        private static SeeDitherSettings _settings;
+        public static SeeDitherSettings Settings => _settings;
 
-        public static SeeDitherSettings Settings { get; private set; }
+        public SeeDitherSettings SettingsInstance { get; }
 
         [ImportingConstructor]
-        public SeeDitherPlugin(IProfileService profileService, ITelescopeMediator telescopeMediator) {
+        public SeeDitherPlugin() {
             try {
-                Mediators.ProfileService = profileService;
-                Mediators.TelescopeMediator = telescopeMediator;
-                Settings = SeeDitherSettings.Load();
-
-                // Merge our resources so NINA's UI system finds the DataTemplates for settings panels
+                _settings = SeeDitherSettings.Load();
+                SettingsInstance = _settings;
                 var uri = new Uri("pack://application:,,,/NINA.Plugin.SeeDither;component/Resources.xaml");
                 var rd = new ResourceDictionary { Source = uri };
                 Application.Current.Resources.MergedDictionaries.Add(rd);
             } catch (Exception ex) {
-                SeeDitherLog.Error("SeeDitherPlugin constructor failed", ex);
+                // Plugin resources failed to load — NINA will still work without UI
             }
         }
 
