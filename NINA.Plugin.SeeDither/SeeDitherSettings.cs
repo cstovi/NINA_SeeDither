@@ -11,10 +11,11 @@ namespace NINA.Plugin.SeeDither {
     public class SeeDitherSettings : INotifyPropertyChanged {
         private bool _enabled = true;
         private int _exposuresBetween = 2;
-        private double _minOffsetArcsec = 5.0;
-        private double _maxOffsetArcsec = 60.0;
-        private double _plateScaleArcSecPerPx = 3.99;
-        private double _slewSettleSeconds = 2.0;
+        private int _minOffsetArcsec = 20;
+        private int _maxOffsetArcsec = 150;
+        private double _plateScaleArcSecPerPx = 3.74;
+        private string _minOffsetArcsecText = "20";
+        private string _maxOffsetArcsecText = "150";
 
         [field: NonSerialized]
         private bool _suspendSave;
@@ -38,11 +39,11 @@ namespace NINA.Plugin.SeeDither {
             }
         }
 
-        public double MinOffsetArcsec {
+        public int MinOffsetArcsec {
             get => _minOffsetArcsec;
-            set {
-                var clamped = Math.Max(0.1, Math.Min(3600.0, value));
-                if (clamped >= MaxOffsetArcsec) clamped = MaxOffsetArcsec - 0.1;
+            internal set {
+                var clamped = Math.Max(1, Math.Min(500, value));
+                if (clamped > MaxOffsetArcsec) clamped = MaxOffsetArcsec;
                 if (_minOffsetArcsec != clamped) {
                     _minOffsetArcsec = clamped;
                     OnPropertyChanged();
@@ -52,16 +53,62 @@ namespace NINA.Plugin.SeeDither {
             }
         }
 
-        public double MaxOffsetArcsec {
-            get => _maxOffsetArcsec;
+        public string MinOffsetArcsecText {
+            get => _minOffsetArcsecText;
             set {
-                var clamped = Math.Max(0.2, Math.Min(3600.0, value));
-                if (clamped <= MinOffsetArcsec) clamped = MinOffsetArcsec + 0.1;
+                if (_minOffsetArcsecText != value) {
+                    _minOffsetArcsecText = value;
+                    OnPropertyChanged();
+                    if (int.TryParse(value, out var parsed)) {
+                        if (parsed < 1 || parsed > 500) {
+                            throw new ArgumentOutOfRangeException(nameof(value), "Min offset must be between 1 and 500 arcseconds.");
+                        }
+                        if (parsed > MaxOffsetArcsec) {
+                            throw new ArgumentOutOfRangeException(nameof(value), "Min offset cannot be greater than Max offset.");
+                        }
+                        MinOffsetArcsec = parsed;
+                        _minOffsetArcsecText = parsed.ToString();
+                        OnPropertyChanged(nameof(MinOffsetArcsecText));
+                    } else if (!string.IsNullOrWhiteSpace(value)) {
+                        throw new FormatException("Min offset must be a whole number.");
+                    }
+                }
+            }
+        }
+
+        public int MaxOffsetArcsec {
+            get => _maxOffsetArcsec;
+            internal set {
+                var clamped = Math.Max(1, Math.Min(500, value));
+                if (clamped < MinOffsetArcsec) clamped = MinOffsetArcsec;
                 if (_maxOffsetArcsec != clamped) {
                     _maxOffsetArcsec = clamped;
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(MaxOffsetPixels));
                     Save();
+                }
+            }
+        }
+
+        public string MaxOffsetArcsecText {
+            get => _maxOffsetArcsecText;
+            set {
+                if (_maxOffsetArcsecText != value) {
+                    _maxOffsetArcsecText = value;
+                    OnPropertyChanged();
+                    if (int.TryParse(value, out var parsed)) {
+                        if (parsed < 1 || parsed > 500) {
+                            throw new ArgumentOutOfRangeException(nameof(value), "Max offset must be between 1 and 500 arcseconds.");
+                        }
+                        if (parsed < MinOffsetArcsec) {
+                            throw new ArgumentOutOfRangeException(nameof(value), "Max offset cannot be less than Min offset.");
+                        }
+                        MaxOffsetArcsec = parsed;
+                        _maxOffsetArcsecText = parsed.ToString();
+                        OnPropertyChanged(nameof(MaxOffsetArcsecText));
+                    } else if (!string.IsNullOrWhiteSpace(value)) {
+                        throw new FormatException("Max offset must be a whole number.");
+                    }
                 }
             }
         }
@@ -75,18 +122,6 @@ namespace NINA.Plugin.SeeDither {
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(MinOffsetPixels));
                     OnPropertyChanged(nameof(MaxOffsetPixels));
-                    Save();
-                }
-            }
-        }
-
-        public double SlewSettleSeconds {
-            get => _slewSettleSeconds;
-            set {
-                var clamped = Math.Max(0.0, Math.Min(30.0, value));
-                if (_slewSettleSeconds != clamped) {
-                    _slewSettleSeconds = clamped;
-                    OnPropertyChanged();
                     Save();
                 }
             }
@@ -109,10 +144,16 @@ namespace NINA.Plugin.SeeDither {
                 if (File.Exists(SettingsPath)) {
                     var json = File.ReadAllText(SettingsPath);
                     var settings = JsonSerializer.Deserialize<SeeDitherSettings>(json);
-                    if (settings != null) return settings;
+                    if (settings != null) {
+                        settings._minOffsetArcsecText = settings._minOffsetArcsec.ToString();
+                        settings._maxOffsetArcsecText = settings._maxOffsetArcsec.ToString();
+                        return settings;
+                    }
                 }
                 var defaults = new SeeDitherSettings();
                 defaults.SuspendSave();
+                defaults._minOffsetArcsecText = defaults._minOffsetArcsec.ToString();
+                defaults._maxOffsetArcsecText = defaults._maxOffsetArcsec.ToString();
                 defaults.Save();
                 defaults.ResumeSave();
                 return defaults;
@@ -120,6 +161,8 @@ namespace NINA.Plugin.SeeDither {
                 SeeDitherLog.Error("Failed to load settings", ex);
                 var defaults = new SeeDitherSettings();
                 defaults.SuspendSave();
+                defaults._minOffsetArcsecText = defaults._minOffsetArcsec.ToString();
+                defaults._maxOffsetArcsecText = defaults._maxOffsetArcsec.ToString();
                 defaults.Save();
                 defaults.ResumeSave();
                 return defaults;
@@ -146,5 +189,16 @@ namespace NINA.Plugin.SeeDither {
         public void SuspendSave() => _suspendSave = true;
 
         public void ResumeSave() => _suspendSave = false;
+
+        public void LoadPlateScaleFromCamera(Func<double> getPlateScale) {
+            try {
+                var detected = getPlateScale();
+                if (detected > 0.01 && detected < 100.0) {
+                    _plateScaleArcSecPerPx = detected;
+                    OnPropertyChanged(nameof(MinOffsetPixels));
+                    OnPropertyChanged(nameof(MaxOffsetPixels));
+                }
+            } catch { }
+        }
     }
 }

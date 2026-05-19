@@ -128,12 +128,11 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                 SeeDitherLog.Info($"Base coordinates: RA={baseCoords.RAString} Dec={baseCoords.DecString}");
 
                 var settings = SeeDitherPlugin.Settings;
-                double minOffset = settings?.MinOffsetArcsec ?? 5.0;
-                double maxOffset = settings?.MaxOffsetArcsec ?? 60.0;
-                double settleSeconds = settings?.SlewSettleSeconds ?? 2.0;
+                int minOffset = settings?.MinOffsetArcsec ?? 5;
+                int maxOffset = settings?.MaxOffsetArcsec ?? 60;
 
-                if (minOffset >= maxOffset) {
-                    SeeDitherLog.Error("Invalid offset range: Min >= Max.");
+                if (minOffset > maxOffset) {
+                    SeeDitherLog.Error("Invalid offset range: Min > Max.");
                     return;
                 }
 
@@ -163,10 +162,6 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
 
                 var newPos = _telescopeMediator.GetCurrentPosition();
                 SeeDitherLog.Info($"Post-slew position: RA={newPos?.RAString} Dec={newPos?.DecString}");
-
-                if (settleSeconds > 0) {
-                    await Task.Delay(TimeSpan.FromSeconds(settleSeconds), token);
-                }
 
                 progress?.Report(new ApplicationStatus { Status = string.Empty });
             } catch (OperationCanceledException) {

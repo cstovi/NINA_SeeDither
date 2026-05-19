@@ -1,0 +1,76 @@
+# NINA SeeDither Plugin
+
+*NINA 3.x plugin that performs absolute GoTo coordinate-offset dithering after exposures, designed for Seestar mounts whose guide pulses are unreliable.*
+
+SeeDither adds a sequencer trigger that fires after a configurable number of exposures and performs a random dither via absolute mount slewing — no guider required. Plate scale is auto-detected from the connected Seestar camera name.
+
+## Version
+
+Current plugin version: `1.0.0.0`
+
+## Features
+
+- Absolute GoTo dithering — works without a guider by slewing to offset coordinates
+- Auto-detects Seestar model (S30, S30 Pro, S50) from camera name to set plate scale
+- Configurable min/max offset range in arcseconds (1–500) with live pixel equivalent display
+- Configurable exposures-between-dither counter with inline progress (e.g. `3/5`)
+- Input validation with red border and tooltips for out-of-range values
+- Dithers from current mount position each time (not cached base coordinates)
+- Uses NINA's mount-level settle time — no separate settle setting needed
+
+## Requirements
+
+- NINA 3.x (minimum application version `3.2.0.9001`)
+- Seestar mount connected in NINA
+- Seestar camera connected (for auto plate-scale detection)
+
+## Install
+
+Since SeeDither is not currently in the NINA plugin repository, install it manually:
+
+1. Create this folder if it does not exist:
+   - `%LOCALAPPDATA%\NINA\Plugins\3.0.0\SeeDither\`
+2. Put `NINA.Plugin.SeeDither.dll` in that folder — either from a **GitHub Release** asset or copy it from `NINA.Plugin.SeeDither\bin\Release\net8.0-windows\` after a local Release build.
+3. Restart NINA.
+
+## Usage
+
+1. Connect your Seestar mount and camera in NINA.
+2. In plugin options, set your min/max offset range — changes are saved automatically.
+3. In the Advanced Sequencer, add the **SeeDither After Exposures** trigger under a capture container.
+4. Set the "After exposures" value to control dither frequency (e.g. `5` = dither every 5 exposures).
+5. The trigger shows a progress counter (`1/5`, `2/5`, …) during the sequence.
+
+## Settings
+
+Settings are persisted automatically to:
+
+- `%LOCALAPPDATA%\NINA\SeeDither\settings.json`
+
+| Setting | Default | Description |
+|---|---|---|
+| Min Offset | 20 arcsec (~5 px) | Minimum random dither offset |
+| Max Offset | 150 arcsec (~40 px) | Maximum random dither offset |
+| Plate Scale | Auto-detected | S30/S30 Pro: 3.74"/px, S50: 2.39"/px |
+
+## Notes
+
+- Plugin identity GUID is stable and must not be changed after publish.
+- Existing dependency warnings (for some transitive packages) may appear at build time, but Release builds succeed.
+- The dither uses absolute mount slewing — NINA's mount-level settle time applies after each slew.
+
+## Support
+
+If you use and like anything I've done, support on [Ko-fi](https://ko-fi.com/turnpike47298) is appreciated to encourage me to keep going!
+
+## About
+
+NINA plugin for absolute GoTo coordinate-offset dithering on Seestar mounts.
+
+### Resources
+
+[Readme](#readme-ov-file)
+
+### License
+
+[MPL-2.0 license](#MPL-2.0-1-ov-file)

@@ -21,7 +21,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
 [assembly: AssemblyMetadata("MinimumApplicationVersion", "3.2.0.9001")]
 [assembly: AssemblyMetadata("ChangelogURL", "")]
-[assembly: AssemblyMetadata("FeaturedImageURL", "")]
+[assembly: AssemblyMetadata("FeaturedImageURL", "https://i.ibb.co/v6C6vXjp/seedither.jpg")]
 [assembly: AssemblyMetadata("ScreenshotURL", "")]
 [assembly: AssemblyMetadata("AltScreenshotURL", "")]
 [assembly: AssemblyMetadata("LongDescription", "Performs random absolute-coordinate dithering after exposures, designed for Seestar mounts whose guide pulses are unreliable.")]
