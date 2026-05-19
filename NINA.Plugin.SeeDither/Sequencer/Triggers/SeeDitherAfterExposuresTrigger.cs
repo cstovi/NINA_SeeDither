@@ -192,7 +192,7 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
             }
         }
 
-        public override string ToString() => $"Category: {Category}, Item: nameof(SeeDitherAfterExposuresTrigger), Enabled: {Enabled}, Every: {ExposuresBetween}, Range: [{MinOffsetArcsec},{MaxOffsetArcsec}] arcsec";
+        public override string ToString() => $"Category: {Category}, Item: SeeDitherAfterExposuresTrigger, Enabled: {Enabled}, Every: {ExposuresBetween}, Range: [{MinOffsetArcsec},{MaxOffsetArcsec}] arcsec";
 
         public override bool Validate() {
             Issues.Clear();

@@ -104,12 +104,16 @@ namespace NINA.Plugin.SeeDither {
                     if (settings != null) return settings;
                 }
                 var defaults = new SeeDitherSettings();
+                defaults.SuspendSave();
                 defaults.Save();
+                defaults.ResumeSave();
                 return defaults;
             } catch (Exception ex) {
                 SeeDitherLog.Error("Failed to load settings", ex);
                 var defaults = new SeeDitherSettings();
+                defaults.SuspendSave();
                 defaults.Save();
+                defaults.ResumeSave();
                 return defaults;
             }
         }
@@ -131,6 +135,8 @@ namespace NINA.Plugin.SeeDither {
             }
         }
 
-        internal void SuspendSave() { _suspendSave = true; }
+        public void SuspendSave() => _suspendSave = true;
+
+        public void ResumeSave() => _suspendSave = false;
     }
 }

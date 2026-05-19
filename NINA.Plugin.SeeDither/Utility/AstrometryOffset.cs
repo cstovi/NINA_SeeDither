@@ -14,8 +14,8 @@ namespace NINA.Plugin.SeeDither.Utility {
                 double deltaDecDeg = deltaDecArcsec / 3600.0;
 
                 double newRaHours = baseCoords.RA + deltaRaHours;
-                if (newRaHours < 0) newRaHours += 24;
-                if (newRaHours >= 24) newRaHours -= 24;
+                while (newRaHours < 0) newRaHours += 24;
+                while (newRaHours >= 24) newRaHours -= 24;
 
                 double newDecDeg = Math.Clamp(baseCoords.Dec + deltaDecDeg, -89.999, 89.999);
 
