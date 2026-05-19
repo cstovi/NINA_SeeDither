@@ -4,8 +4,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using NINA.Astrometry;
-using NINA.Core.Model.Application;
+using NINA.Core.Model;
 using NINA.Equipment.Interfaces.Mediator;
+using NINA.Plugin.SeeDither.Utility;
+using NINA.Sequencer.Container;
 using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Trigger;
 
@@ -87,7 +89,7 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                 if (previousItem == null) return false;
 
                 string typeName = previousItem.GetType().Name;
-                bool isExposure = previousItem is IExposureItem || typeName.Contains("TakeExposure");
+                bool isExposure = typeName.Contains("TakeExposure") || typeName.Contains("Exposure");
                 if (!isExposure) return false;
 
                 lock (_stateLock) {
@@ -126,20 +128,20 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                             var targetType = parent.GetType();
                             var targetProp = targetType.GetProperty("Target");
                             if (targetProp != null) {
-                                var target = targetProp.GetValue(parent);
-                                if (target != null) {
-                                    var coordsProp = target.GetType().GetProperty("Coordinates") ?? target.GetType().GetProperty("InputCoordinates");
-                                    if (coordsProp != null) {
-                                        found = coordsProp.GetValue(target) as Coordinates;
-                                        break;
-                                    }
+                            var targetObj = targetProp.GetValue(parent);
+                            if (targetObj != null) {
+                                var coordsProp = targetObj.GetType().GetProperty("Coordinates") ?? targetObj.GetType().GetProperty("InputCoordinates");
+                                if (coordsProp != null) {
+                                    found = coordsProp.GetValue(targetObj) as Coordinates;
+                                    break;
                                 }
+                            }
                             }
                             parent = parent.Parent;
                         }
 
                         if (found != null) {
-                            _baseCoords = new Coordinates(found.RA, found.Dec, found.Epoch);
+                            _baseCoords = new Coordinates(Angle.ByHours(found.RA), Angle.ByDegree(found.Dec), found.Epoch);
                         } else {
                             _baseCoords = new Coordinates(Angle.ByHours(info.RightAscension), Angle.ByDegree(info.Declination), Epoch.JNOW);
                             SeeDitherLog.Warn("Base coordinates captured from telescope, not target.");
@@ -193,28 +195,5 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
         }
 
         public override string ToString() => $"Category: {Category}, Item: SeeDitherAfterExposuresTrigger, Enabled: {Enabled}, Every: {ExposuresBetween}, Range: [{MinOffsetArcsec},{MaxOffsetArcsec}] arcsec";
-
-        public override bool Validate() {
-            Issues.Clear();
-
-            if (Mediators.TelescopeMediator == null) {
-                Issues.Add("Telescope mediator is unavailable.");
-            } else {
-                var info = Mediators.TelescopeMediator?.GetInfo();
-                if (info == null || !info.Connected) {
-                    Issues.Add("Telescope not connected.");
-                }
-            }
-
-            if (!(MinOffsetArcsec < MaxOffsetArcsec)) {
-                Issues.Add("MinOffset must be less than MaxOffset.");
-            }
-
-            if (ExposuresBetween < 1) {
-                Issues.Add("ExposuresBetween must be >= 1.");
-            }
-
-            return Issues.Count == 0;
-        }
     }
 }

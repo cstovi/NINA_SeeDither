@@ -1,5 +1,5 @@
-using NINA.Core.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
+using NINA.Profile.Interfaces;
 
 namespace NINA.Plugin.SeeDither {
     internal static class Mediators {

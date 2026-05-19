@@ -1,8 +1,10 @@
+using System;
 using System.ComponentModel.Composition;
-using NINA.Plugin;
-using NINA.Core.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
+using NINA.Plugin;
+using NINA.Plugin.Interfaces;
 using NINA.Plugin.SeeDither.Utility;
+using NINA.Profile.Interfaces;
 
 namespace NINA.Plugin.SeeDither {
     [Export(typeof(IPluginManifest))]
