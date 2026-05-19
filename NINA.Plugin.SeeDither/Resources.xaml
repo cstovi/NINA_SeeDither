@@ -1,0 +1,58 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:triggers="clr-namespace:NINA.Plugin.SeeDither.Sequencer.Triggers">
+
+    <DrawingImage x:Key="DitherSVG">
+        <DrawingImage.Drawing>
+            <GeometryDrawing Brush="White">
+                <GeometryDrawing.Geometry>
+                    <CombinedGeometry GeometryCombineMode="Union">
+                        <CombinedGeometry.Geometry1>
+                            <PathGeometry>
+                                <PathFigure StartPoint="10,2">
+                                    <LineSegment Point="18,10" />
+                                    <LineSegment Point="14,10" />
+                                    <LineSegment Point="14,22" />
+                                    <LineSegment Point="10,22" />
+                                    <LineSegment Point="10,10" />
+                                    <LineSegment Point="6,10" />
+                                    <LineSegment Point="2,10" />
+                                </PathFigure>
+                            </PathGeometry>
+                        </CombinedGeometry.Geometry1>
+                        <CombinedGeometry.Geometry2>
+                            <PathGeometry>
+                                <PathFigure StartPoint="10,2">
+                                    <LineSegment Point="10,18" />
+                                </PathFigure>
+                            </PathGeometry>
+                        </CombinedGeometry.Geometry2>
+                    </CombinedGeometry>
+                </GeometryDrawing.Geometry>
+            </GeometryDrawing>
+        </DrawingImage.Drawing>
+    </DrawingImage>
+
+    <DataTemplate DataType="{x:Type triggers:SeeDitherAfterExposuresTrigger}">
+        <StackPanel Margin="10">
+            <CheckBox IsChecked="{Binding Enabled, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Content="Enabled" Margin="0,0,0,8" />
+
+            <Label Content="Exposures Between" Target="{Binding ElementName=numExposuresBetween}" />
+            <TextBox x:Name="numExposuresBetween" Text="{Binding ExposuresBetween, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+
+            <Label Content="Min Offset (arcsec)" Target="{Binding ElementName=numMinOffset}" />
+            <TextBox x:Name="numMinOffset" Text="{Binding MinOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+
+            <Label Content="Max Offset (arcsec)" Target="{Binding ElementName=numMaxOffset}" />
+            <TextBox x:Name="numMaxOffset" Text="{Binding MaxOffsetArcsec, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+
+            <Label Content="Plate Scale (arcsec/px)" Target="{Binding ElementName=numPlateScale}" />
+            <TextBox x:Name="numPlateScale" Text="{Binding PlateScaleArcSecPerPx, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+
+            <Label Content="Settle Seconds" Target="{Binding ElementName=numSettleSeconds}" />
+            <TextBox x:Name="numSettleSeconds" Text="{Binding SlewSettleSeconds, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Margin="0,0,0,8" />
+        </StackPanel>
+    </DataTemplate>
+
+</ResourceDictionary>

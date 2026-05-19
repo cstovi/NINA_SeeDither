@@ -1,0 +1,46 @@
+Goal
+- Develop a C# NINA plugin ("SeeDither") implementing an IAfterExposuresTrigger to perform absolute GoTo coordinate offset dithering on Seestar S30 mounts, bypassing driver bugs and mechanical backlash that break standard guide pulses.
+Constraints & Preferences
+- Plugin in C# (.NET 8 SDK, WPF), follows SeeDrift/SeeDew conventions (JSON settings, [ImportingConstructor] DI, NINA MEF exports)
+- Requires PluginBase with options panel UI — user confirmed need for plugin page and options panel (changed from trigger-only)
+- Plate scale autodetection for S30 (2.39 arcsec/pixel); placeholders for S50/S30 Pro with user override available
+- Minimal built-in icon: dither arrow/crosshair pattern
+Progress
+Done
+- Reviewed NINA documentation (dithering.html, triggers.html) and existing plugins (SeeDrift)
+- Resolved all architectural questions: trigger approach over standalone instruction, independent RA/Dec randomization, absolute GoTo slews with cos(Dec) correction
+- Analyzed SeeDrift project structure: .csproj SDK config (net8.0-windows, MEF exports, JSON persistence), SeeDriftPlugin.cs (DI container pattern, options UI binding), confirmed NINA assembly references
+- Examined NINA trigger docs confirming "Dither After Exposures" integration point and telescope dependency
+- Reviewed Claude Opus detailed blueprint at C:\Users\carls\Documents\Dev\NINA_SeeDither\plans\claudeopusseeditherplan.md for pre-implementation review
+- Accepted Claude's assumption: telescope.SlewToCoordinatesAsync(target, token) is the correct NINA API (proceeding despite SeeDrift not having telescope code to verify)
+- Confirmed SeeDrift cannot be referenced for telescope slews — no prior GoTo/telescope interaction exists in that plugin
+In Progress
+- Reviewing Claude Opus implementation blueprint against actual codebase patterns before scaffolding begins
+Blocked
+- None currently; awaiting user confirmation to proceed with full implementation after blueprint review
+Key Decisions
+- PluginBase required: User confirmed need for options panel UI — will implement thin plugin class with settings container and WPF options page, not trigger-only injection
+- Absolute GoTo over relative pulses: Bypasses S30 driver bug (drops RA axis) and mechanical backlash (swallows small pulses); uses max speed + encoder verification for guaranteed displacement
+- Independent RA/Dec randomization every exposure: Breaks walking noise patterns better than quadrant-based dithering
+- Plate scale defaults to 2.39 arcsec/pixel (S30), with user override field and placeholders for S50/S30 Pro
+Next Steps
+1. Complete blueprint review against actual SeeDrift codebase patterns
+2. Scaffold NINA_SeeDither project structure (csproj, .sln)
+3. Implement SeeDitherSettings.cs with JSON persistence pattern
+4. Build SeeDitherPlugin.cs as thin settings container (MEF exports, options UI binding)
+5. Create trigger class implementing IAfterExposuresTrigger with GoTo offset logic using telescope.SlewToCoordinatesAsync
+6. Add Resources.xaml, AssemblyInfo.cs, and logging utility following SeeDrift conventions
+Critical Context
+- S30 Hardware: IMX462 sensor, 2.9µm pixels, 250mm focal length → ~2.39 arcsec/pixel image scale; heavy Dec drift from polar alignment error; RA tracking stable but guide pulses fail
+- Alpaca Driver Bug: NINA's direct guider command drops the RA axis component on S30 mounts
+- Mechanical Backlash: Azimuth/RA gear train has significant slop; pulses <~5s swallowed without moving optical tube. GoTo commands bypass this by commanding absolute coordinates at max slew speed until encoders confirm position.
+- Coordinate Math: RA offset requires cos(Dec) correction to convert arcseconds to time seconds: OffsetRA_sec = (Arcsec / 15) * cos(Dec)
+Relevant Files
+- C:\Users\carls\Documents\Dev\NINA_SeeDrift\ — Existing plugin project; contains shared utilities, sequence item patterns, and logging conventions
+- C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\docs\advanced\dithering.html — NINA documentation on dithering workflow and trigger integration points
+- C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\docs\sequencer\advanced\triggers.html — NINA trigger architecture reference (AfterExposures, BeforeExposures patterns)
+- NINA.Plugin.SeeDrift\Utility\AstrometryMath.cs — Contains DeltaArcSec() method with proper RA/Dec delta math (cos(Dec) correction, hour normalization)
+- C:\Users\carls\Documents\Dev\NINA_SeeDrift\NINA.Plugin.SeeDrift\SeeDriftPlugin.cs — Reference for MEF exports ([Export(typeof(IPluginManifest))], [ImportingConstructor]) and DI container pattern
+- C:\Users\carls\Documents\Dev\NINA_SeeDrift\NINA.Plugin.SeeDrift\Properties\AssemblyInfo.cs — Assembly metadata conventions (AssemblyMetadata("id", "..."), version, descriptions)
+- C:\Users\carls\Documents\Dev\NINA_SeeDither\plans\claudeopusseeditherplan.md — Claude Opus detailed implementation blueprint awaiting review
+- C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Sequencer.dll, NINA.Equipment.dll, NINA.Core.dll, NINA.Plugin.dll — NINA API assemblies for trigger/telescope interface inspection

@@ -1,0 +1,4 @@
+C:\Users\carls\Documents\Cursor\NINA_SeeDither\NINA.Plugin.SeeDither\obj\Release\net8.0-windows\NINA.Plugin.SeeDither.csproj.AssemblyReference.cache
+C:\Users\carls\Documents\Cursor\NINA_SeeDither\NINA.Plugin.SeeDither\obj\Release\net8.0-windows\SeeDither_MarkupCompile.cache
+C:\Users\carls\Documents\Cursor\NINA_SeeDither\NINA.Plugin.SeeDither\obj\Release\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+C:\Users\carls\Documents\Cursor\NINA_SeeDither\NINA.Plugin.SeeDither\obj\Release\net8.0-windows\SeeDither_MarkupCompile.lref

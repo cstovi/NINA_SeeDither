@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>false</UseWindowsForms>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <Platforms>AnyCPU</Platforms>
+    <AssemblyName>SeeDither</AssemblyName>
+    <RootNamespace>NINA.Plugin.SeeDither</RootNamespace>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="NINA.Astrometry">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Astrometry.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Core">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.CustomControlLibrary">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.CustomControlLibrary.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Equipment">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Equipment.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Image">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Image.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.MGEN">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.MGEN.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.PlateSolving">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.PlateSolving.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Plugin">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Plugin.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Profile">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Profile.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.Sequencer">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.Sequencer.dll</HintPath>
+    </Reference>
+    <Reference Include="NINA.WPF.Base">
+      <HintPath>C:\Program Files\N.I.N.A. - Nighttime Imaging 'N' Astronomy\NINA.WPF.Base.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="CopyToNina" AfterTargets="Build">
+    <PropertyGroup>
+      <NinaPluginDir>$(LOCALAPPDATA)\NINA\Plugins\3.0.0\SeeDither\</NinaPluginDir>
+    </PropertyGroup>
+    <MakeDir Directories="$(NinaPluginDir)" Condition="!Exists('$(NinaPluginDir)')" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(NinaPluginDir)" />
+  </Target>
+
+</Project>

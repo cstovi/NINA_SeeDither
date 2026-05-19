@@ -1,0 +1,11 @@
+Microsoft Visual Studio Solution File
+Format Version 12.00
+Project("{FAE04700-98BC-4D36-B619-38996D3EDAF0}") = "NINA.Plugin.SeeDither", "NINA.Plugin.SeeDither\NINA.Plugin.SeeDither.csproj", "{A5B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5D}"
+EndProject
+Global
+	Global(SolutionConfigurationPlatforms) = "Debug|AnyCPU"
+	Global(SolutionConfigurationPlatforms) = "Release|AnyCPU"
+	Global(ProjectConfigurationPlatforms) = "Debug|AnyCPU.Debug|Debug|AnyCPU"
+	Global(ProjectConfigurationPlatforms) = "Release|AnyCPU.Release|AnyCPU"
+	Global(NamespaceBrowsePerProjectModules) = ""
+EndGlobal
