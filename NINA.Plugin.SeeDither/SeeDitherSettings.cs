@@ -43,7 +43,7 @@ namespace NINA.Plugin.SeeDither {
             get => _minOffsetArcsec;
             internal set {
                 var clamped = Math.Max(1, Math.Min(500, value));
-                if (clamped > MaxOffsetArcsec) clamped = MaxOffsetArcsec;
+                if (!_suspendSave && clamped > MaxOffsetArcsec) clamped = MaxOffsetArcsec;
                 if (_minOffsetArcsec != clamped) {
                     _minOffsetArcsec = clamped;
                     OnPropertyChanged();
@@ -59,6 +59,7 @@ namespace NINA.Plugin.SeeDither {
                 if (_minOffsetArcsecText != value) {
                     _minOffsetArcsecText = value;
                     OnPropertyChanged();
+                    if (_suspendSave) return;
                     if (int.TryParse(value, out var parsed)) {
                         if (parsed < 1 || parsed > 500) {
                             throw new ArgumentOutOfRangeException(nameof(value), "Min offset must be between 1 and 500 arcseconds.");
@@ -80,7 +81,7 @@ namespace NINA.Plugin.SeeDither {
             get => _maxOffsetArcsec;
             internal set {
                 var clamped = Math.Max(1, Math.Min(500, value));
-                if (clamped < MinOffsetArcsec) clamped = MinOffsetArcsec;
+                if (!_suspendSave && clamped < MinOffsetArcsec) clamped = MinOffsetArcsec;
                 if (_maxOffsetArcsec != clamped) {
                     _maxOffsetArcsec = clamped;
                     OnPropertyChanged();
@@ -96,6 +97,7 @@ namespace NINA.Plugin.SeeDither {
                 if (_maxOffsetArcsecText != value) {
                     _maxOffsetArcsecText = value;
                     OnPropertyChanged();
+                    if (_suspendSave) return;
                     if (int.TryParse(value, out var parsed)) {
                         if (parsed < 1 || parsed > 500) {
                             throw new ArgumentOutOfRangeException(nameof(value), "Max offset must be between 1 and 500 arcseconds.");
@@ -143,8 +145,20 @@ namespace NINA.Plugin.SeeDither {
             try {
                 if (File.Exists(SettingsPath)) {
                     var json = File.ReadAllText(SettingsPath);
-                    var settings = JsonSerializer.Deserialize<SeeDitherSettings>(json);
-                    if (settings != null) {
+                    // Deserialize into a bare DTO to avoid cross-field validation
+                    // during property setter execution (JSON key order is not guaranteed).
+                    var dto = JsonSerializer.Deserialize<SettingsDto>(json);
+                    if (dto != null) {
+                        var settings = new SeeDitherSettings();
+                        settings._enabled = dto.Enabled;
+                        settings._exposuresBetween = Math.Max(1, Math.Min(100, dto.ExposuresBetween));
+                        settings._minOffsetArcsec = Math.Max(1, Math.Min(500, dto.MinOffsetArcsec));
+                        settings._maxOffsetArcsec = Math.Max(1, Math.Min(500, dto.MaxOffsetArcsec));
+                        // Fix up cross-field relationship after both values are set.
+                        if (settings._minOffsetArcsec > settings._maxOffsetArcsec) {
+                            settings._minOffsetArcsec = settings._maxOffsetArcsec;
+                        }
+                        settings._plateScaleArcSecPerPx = Math.Max(0.01, Math.Min(100.0, dto.PlateScaleArcSecPerPx));
                         settings._minOffsetArcsecText = settings._minOffsetArcsec.ToString();
                         settings._maxOffsetArcsecText = settings._maxOffsetArcsec.ToString();
                         return settings;
@@ -167,6 +181,15 @@ namespace NINA.Plugin.SeeDither {
                 defaults.ResumeSave();
                 return defaults;
             }
+        }
+
+        // Bare DTO for deserialization — no validation, no side effects.
+        private class SettingsDto {
+            public bool Enabled { get; set; } = true;
+            public int ExposuresBetween { get; set; } = 2;
+            public int MinOffsetArcsec { get; set; } = 20;
+            public int MaxOffsetArcsec { get; set; } = 150;
+            public double PlateScaleArcSecPerPx { get; set; } = 3.74;
         }
 
         public void Save() {

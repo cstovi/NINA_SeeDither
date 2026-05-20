@@ -8,9 +8,9 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyCopyright("Copyright © 2026")]
 [assembly: ComVisible(false)]
 [assembly: Guid("c4d2e5a1-7b3f-4e9d-9f2a-6f1c8b9a3d11")]
-[assembly: AssemblyVersion("1.1.0.0")]
-[assembly: AssemblyFileVersion("1.1.0.0")]
-[assembly: AssemblyInformationalVersion("1.1.0.0")]
+[assembly: AssemblyVersion("1.2.0.0")]
+[assembly: AssemblyFileVersion("1.2.0.0")]
+[assembly: AssemblyInformationalVersion("1.2.0.0")]
 
 [assembly: AssemblyMetadata("Id", "c4d2e5a1-7b3f-4e9d-9f2a-6f1c8b9a3d11")]
 [assembly: AssemblyMetadata("Name", "SeeDither")]

@@ -9,6 +9,7 @@ using NINA.Equipment.Interfaces;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin.SeeDither.Utility;
 using NINA.Sequencer.Container;
+using NINA.Sequencer.Interfaces;
 using NINA.Sequencer.SequenceItem;
 using NINA.Sequencer.Trigger;
 
@@ -85,9 +86,7 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
             try {
                 if (previousItem == null) return false;
 
-                string typeName = previousItem.GetType().Name;
-                bool isExposure = typeName.Contains("TakeExposure") || typeName.Contains("Exposure");
-                if (!isExposure) return false;
+                if (previousItem is not IExposureItem) return false;
 
                 bool shouldFire;
                 lock (_stateLock) {
