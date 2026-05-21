@@ -23,7 +23,6 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
     [JsonObject(MemberSerialization.OptIn)]
     public class SeeDitherAfterExposuresTrigger : SequenceTrigger {
         private readonly ITelescopeMediator _telescopeMediator;
-        private readonly Random _rng = new Random();
         private int _exposureCounter = 0;
         private readonly object _stateLock = new object();
 
@@ -94,9 +93,9 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                     int interval = Math.Max(1, ExposuresBetween);
                     shouldFire = (_exposureCounter % interval == 0);
                     _currentCount = shouldFire ? 0 : _exposureCounter % interval;
+                    OnPropertyChanged(nameof(CurrentCount));
+                    OnPropertyChanged(nameof(ProgressText));
                 }
-                OnPropertyChanged(nameof(CurrentCount));
-                OnPropertyChanged(nameof(ProgressText));
                 return shouldFire;
             } catch (Exception ex) {
                 SeeDitherLog.Error("ShouldTrigger failed", ex);
@@ -135,7 +134,7 @@ namespace NINA.Plugin.SeeDither.Sequencer.Triggers {
                     return;
                 }
 
-                var (raArc, decArc) = AstrometryOffset.GenerateRandomOffset(_rng, minOffset, maxOffset);
+                var (raArc, decArc) = AstrometryOffset.GenerateRandomOffset(Random.Shared, minOffset, maxOffset);
 
                 Coordinates target = AstrometryOffset.ApplyOffset(baseCoords, raArc, decArc);
 

@@ -5,14 +5,16 @@ using System.Windows;
 using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
-using NINA.Profile.Interfaces;
+using NINA.Plugin.SeeDither.Utility;
 
 namespace NINA.Plugin.SeeDither {
     [Export(typeof(IPluginManifest))]
-    public class SeeDitherPlugin : PluginBase {
+    public class SeeDitherPlugin : PluginBase, IDisposable {
         private static SeeDitherSettings _settings;
-        public static SeeDitherSettings Settings => _settings;
+        private static ResourceDictionary _resourceDictionary;
+        private bool _disposed;
 
+        public static SeeDitherSettings Settings => _settings;
         public SeeDitherSettings SettingsInstance { get; }
         public ICameraMediator CameraMediator { get; }
 
@@ -24,12 +26,25 @@ namespace NINA.Plugin.SeeDither {
                 _settings.LoadPlateScaleFromCamera(GetPlateScaleFromCamera);
                 SettingsInstance = _settings;
                 var uri = new Uri("pack://application:,,,/NINA.Plugin.SeeDither;component/Resources.xaml");
-                var rd = new ResourceDictionary { Source = uri };
-                Application.Current.Resources.MergedDictionaries.Add(rd);
+                _resourceDictionary = new ResourceDictionary { Source = uri };
+                Application.Current.Resources.MergedDictionaries.Add(_resourceDictionary);
 
                 CameraMediator.Connected += OnCameraConnected;
             } catch (Exception ex) {
-                // Plugin resources failed to load — NINA will still work without UI
+                SeeDitherLog.Error("Plugin initialization failed", ex);
+            }
+        }
+
+        public void Dispose() {
+            if (_disposed) return;
+            _disposed = true;
+            try {
+                CameraMediator.Connected -= OnCameraConnected;
+                if (_resourceDictionary != null) {
+                    Application.Current.Resources.MergedDictionaries.Remove(_resourceDictionary);
+                }
+            } catch (Exception ex) {
+                SeeDitherLog.Error("Plugin dispose failed", ex);
             }
         }
 
@@ -50,7 +65,8 @@ namespace NINA.Plugin.SeeDither {
                 if (upper.Contains("S50")) return 2.39;
                 if (upper.Contains("S30")) return 3.74;
                 return 3.74;
-            } catch {
+            } catch (Exception ex) {
+                SeeDitherLog.Error("GetPlateScaleFromCamera failed", ex);
                 return 3.74;
             }
         }

@@ -2,7 +2,9 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.IO;
-using System.Text.Json;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json.Serialization;
 using NINA.Core.Utility;
 using NINA.Plugin.SeeDither.Utility;
 
@@ -140,21 +142,23 @@ namespace NINA.Plugin.SeeDither {
         }
 
         private static readonly string SettingsPath = Path.Combine(NINA.Core.Utility.CoreUtil.APPLICATIONTEMPPATH, "SeeDither", "settings.json");
+        private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings {
+            Formatting = Formatting.Indented,
+            ContractResolver = new DefaultContractResolver(),
+            Converters = { new StringEnumConverter() }
+        };
 
         public static SeeDitherSettings Load() {
             try {
                 if (File.Exists(SettingsPath)) {
                     var json = File.ReadAllText(SettingsPath);
-                    // Deserialize into a bare DTO to avoid cross-field validation
-                    // during property setter execution (JSON key order is not guaranteed).
-                    var dto = JsonSerializer.Deserialize<SettingsDto>(json);
+                    var dto = JsonConvert.DeserializeObject<SettingsDto>(json);
                     if (dto != null) {
                         var settings = new SeeDitherSettings();
                         settings._enabled = dto.Enabled;
                         settings._exposuresBetween = Math.Max(1, Math.Min(100, dto.ExposuresBetween));
                         settings._minOffsetArcsec = Math.Max(1, Math.Min(500, dto.MinOffsetArcsec));
                         settings._maxOffsetArcsec = Math.Max(1, Math.Min(500, dto.MaxOffsetArcsec));
-                        // Fix up cross-field relationship after both values are set.
                         if (settings._minOffsetArcsec > settings._maxOffsetArcsec) {
                             settings._minOffsetArcsec = settings._maxOffsetArcsec;
                         }
@@ -198,8 +202,7 @@ namespace NINA.Plugin.SeeDither {
                 string dir = Path.GetDirectoryName(SettingsPath);
                 Directory.CreateDirectory(dir);
                 string tmpPath = SettingsPath + ".tmp";
-                var options = new JsonSerializerOptions { WriteIndented = true };
-                string json = JsonSerializer.Serialize(this, options);
+                string json = JsonConvert.SerializeObject(this, JsonSettings);
                 File.WriteAllText(tmpPath, json);
                 if (File.Exists(SettingsPath))
                     File.Delete(SettingsPath);
@@ -221,7 +224,9 @@ namespace NINA.Plugin.SeeDither {
                     OnPropertyChanged(nameof(MinOffsetPixels));
                     OnPropertyChanged(nameof(MaxOffsetPixels));
                 }
-            } catch { }
+            } catch (Exception ex) {
+                SeeDitherLog.Error("LoadPlateScaleFromCamera failed", ex);
+            }
         }
     }
 }
