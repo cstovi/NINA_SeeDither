@@ -45,9 +45,16 @@ namespace NINA.Plugin.SeeDither {
             get => _minOffsetArcsec;
             internal set {
                 var clamped = Math.Max(1, Math.Min(500, value));
-                if (!_suspendSave && clamped > MaxOffsetArcsec) clamped = MaxOffsetArcsec;
                 if (_minOffsetArcsec != clamped) {
                     _minOffsetArcsec = clamped;
+                    // Auto-raise Max if Min exceeds it — allows Min == Max
+                    if (!_suspendSave && clamped > _maxOffsetArcsec) {
+                        _maxOffsetArcsec = clamped;
+                        OnPropertyChanged(nameof(MaxOffsetArcsec));
+                        OnPropertyChanged(nameof(MaxOffsetPixels));
+                        _maxOffsetArcsecText = clamped.ToString();
+                        OnPropertyChanged(nameof(MaxOffsetArcsecText));
+                    }
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(MinOffsetPixels));
                     Save();
@@ -66,11 +73,8 @@ namespace NINA.Plugin.SeeDither {
                         if (parsed < 1 || parsed > 500) {
                             throw new ArgumentOutOfRangeException(nameof(value), "Min offset must be between 1 and 500 arcseconds.");
                         }
-                        if (parsed > MaxOffsetArcsec) {
-                            throw new ArgumentOutOfRangeException(nameof(value), "Min offset cannot be greater than Max offset.");
-                        }
                         MinOffsetArcsec = parsed;
-                        _minOffsetArcsecText = parsed.ToString();
+                        _minOffsetArcsecText = _minOffsetArcsec.ToString();
                         OnPropertyChanged(nameof(MinOffsetArcsecText));
                     } else if (!string.IsNullOrWhiteSpace(value)) {
                         throw new FormatException("Min offset must be a whole number.");
@@ -83,9 +87,16 @@ namespace NINA.Plugin.SeeDither {
             get => _maxOffsetArcsec;
             internal set {
                 var clamped = Math.Max(1, Math.Min(500, value));
-                if (!_suspendSave && clamped < MinOffsetArcsec) clamped = MinOffsetArcsec;
                 if (_maxOffsetArcsec != clamped) {
                     _maxOffsetArcsec = clamped;
+                    // Auto-drop Min if Max falls below it — allows Min == Max
+                    if (!_suspendSave && clamped < _minOffsetArcsec) {
+                        _minOffsetArcsec = clamped;
+                        OnPropertyChanged(nameof(MinOffsetArcsec));
+                        OnPropertyChanged(nameof(MinOffsetPixels));
+                        _minOffsetArcsecText = clamped.ToString();
+                        OnPropertyChanged(nameof(MinOffsetArcsecText));
+                    }
                     OnPropertyChanged();
                     OnPropertyChanged(nameof(MaxOffsetPixels));
                     Save();
@@ -104,11 +115,8 @@ namespace NINA.Plugin.SeeDither {
                         if (parsed < 1 || parsed > 500) {
                             throw new ArgumentOutOfRangeException(nameof(value), "Max offset must be between 1 and 500 arcseconds.");
                         }
-                        if (parsed < MinOffsetArcsec) {
-                            throw new ArgumentOutOfRangeException(nameof(value), "Max offset cannot be less than Min offset.");
-                        }
                         MaxOffsetArcsec = parsed;
-                        _maxOffsetArcsecText = parsed.ToString();
+                        _maxOffsetArcsecText = _maxOffsetArcsec.ToString();
                         OnPropertyChanged(nameof(MaxOffsetArcsecText));
                     } else if (!string.IsNullOrWhiteSpace(value)) {
                         throw new FormatException("Max offset must be a whole number.");
