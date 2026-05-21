@@ -18,7 +18,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyMetadata("Id", "c4d2e5a1-7b3f-4e9d-9f2a-6f1c8b9a3d11")]
 [assembly: AssemblyMetadata("Name", "SeeDither")]
 [assembly: AssemblyMetadata("Author", "Carl S.")]
-[assembly: AssemblyMetadata("Homepage", "")]
+[assembly: AssemblyMetadata("Homepage", "https://ko-fi.com/turnpike47298")]
 [assembly: AssemblyMetadata("Repository", "")]
 [assembly: AssemblyMetadata("License", "MPL-2.0")]
 [assembly: AssemblyMetadata("LicenseURL", "https://www.mozilla.org/en-US/MPL/2.0/")]
