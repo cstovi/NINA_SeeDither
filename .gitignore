@@ -5,3 +5,7 @@ obj/
 *.log
 packages/
 kimifixdither.md
+.codex-jobs/
+plans/
+publish/
+summary/
