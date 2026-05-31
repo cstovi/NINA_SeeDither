@@ -4,6 +4,8 @@
 
 SeeDither adds a sequencer trigger that fires after a configurable number of exposures and performs a random dither via absolute mount slewing — no guider required. Plate scale is auto-detected from the connected Seestar camera name.
 
+Please note this is in test phase and is just something I've been trying myself to see if I could improve Seestar dithering. It seems to do a good job but I'd like to see if it works for others.  You could just blip through fits images to see the dither movement (although that could also be center after drift). I have an in development plugin called SeeDrift which attempts to chart drift and dither etc and advise if walking noise is likely.
+
 ## Version
 
 Current plugin version: `1.0.0.0`
