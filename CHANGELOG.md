@@ -17,8 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [1.4.0] - 2026-06-01
 
 ### Fixed
-- S30 plate scale corrected to 3.99 arcsec/px (was incorrectly returning S50's 2.39).
-- Plate scale auto-detection now matches on both "S30" and "S50" camera name substrings (case-insensitive), with S30 as the catch-all default.
+- S30 plate scale corrected from 3.74 to 3.99 arcsec/px.
+- Plate scale auto-detection now matches on both "S30" and "S50" camera name substrings (case-insensitive), with S30 returning 3.99 as the catch-all default.
 
 ---
 
