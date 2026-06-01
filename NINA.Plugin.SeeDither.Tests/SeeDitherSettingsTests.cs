@@ -186,8 +186,8 @@ public class SeeDitherSettingsTests {
         Assert.Equal(100.0, settings.PlateScaleArcSecPerPx);
 
         // Act & Assert: Valid value
-        settings.PlateScaleArcSecPerPx = 3.74;
-        Assert.Equal(3.74, settings.PlateScaleArcSecPerPx);
+        settings.PlateScaleArcSecPerPx = 3.99;
+        Assert.Equal(3.99, settings.PlateScaleArcSecPerPx);
     }
 
     [Fact]

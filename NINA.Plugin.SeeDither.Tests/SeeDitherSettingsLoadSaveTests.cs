@@ -111,7 +111,7 @@ public class SeeDitherSettingsLoadSaveTests {
             ""ExposuresBetween"": 2,
             ""MinOffsetArcsec"": 300,
             ""MaxOffsetArcsec"": 150,
-            ""PlateScaleArcSecPerPx"": 3.74
+            ""PlateScaleArcSecPerPx"": 3.99
         }";
 
         // Act: Deserialize and apply to settings
@@ -167,7 +167,7 @@ public class SeeDitherSettingsLoadSaveTests {
         Assert.Equal(2, defaults.ExposuresBetween);
         Assert.Equal(20, defaults.MinOffsetArcsec);
         Assert.Equal(150, defaults.MaxOffsetArcsec);
-        Assert.Equal(3.74, defaults.PlateScaleArcSecPerPx);
+        Assert.Equal(3.99, defaults.PlateScaleArcSecPerPx);
     }
 
     [Fact]

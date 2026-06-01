@@ -15,7 +15,7 @@ namespace NINA.Plugin.SeeDither {
         private int _exposuresBetween = 2;
         private int _minOffsetArcsec = 20;
         private int _maxOffsetArcsec = 150;
-        private double _plateScaleArcSecPerPx = 3.74;
+        private double _plateScaleArcSecPerPx = 3.99;
         private string _minOffsetArcsecText = "20";
         private string _maxOffsetArcsecText = "150";
 
@@ -201,7 +201,7 @@ namespace NINA.Plugin.SeeDither {
             public int ExposuresBetween { get; set; } = 2;
             public int MinOffsetArcsec { get; set; } = 20;
             public int MaxOffsetArcsec { get; set; } = 150;
-            public double PlateScaleArcSecPerPx { get; set; } = 3.74;
+            public double PlateScaleArcSecPerPx { get; set; } = 3.99;
         }
 
         public void Save() {
