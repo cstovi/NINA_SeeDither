@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.5.0] - 2026-06-01
+
+### Added
+- CHANGELOG.md with full version history.
+- `ChangelogURL` metadata pointing to GitHub releases page (visible as a link in NINA's plugin options panel).
+
+---
+
 ## [1.4.0] - 2026-06-01
 
 ### Fixed
@@ -65,6 +73,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+[1.5.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.5.0
 [1.4.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.4.0
 [1.3.1]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.3.1
 [1.3.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.3.0
