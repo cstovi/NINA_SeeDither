@@ -57,6 +57,10 @@ Settings are persisted automatically to:
 
 ## Notes
 
+Example (from my own seedrift nina plugin) showing frames (circles) drifting, SeeDither (triangles) dithering in both RA and DEC, and center after drift (squares) recentering.
+
+<img width="1116" height="1116" alt="image" src="https://github.com/user-attachments/assets/d7581e12-adc0-41f2-946d-7d77c5c74166" />
+
 - Plugin identity GUID is stable and must not be changed after publish.
 - Existing dependency warnings (for some transitive packages) may appear at build time, but Release builds succeed.
 - The dither uses absolute mount slewing — NINA's mount-level settle time applies after each slew.
