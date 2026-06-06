@@ -55,7 +55,7 @@ Settings are persisted automatically to:
 | Max Offset | 150 arcsec (~40 px) | Maximum random dither offset |
 | Plate Scale | Auto-detected | S30/S30 Pro: 3.99"/px, S50: 2.39"/px |
 
-## Notes
+## Example/Screenshots
 
 Example (from my own seedrift nina plugin) showing frames (circles) drifting, SeeDither (triangles) dithering in both RA and DEC, and center after drift (squares) recentering.
 
