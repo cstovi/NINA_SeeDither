@@ -8,7 +8,7 @@ Please note this is in test phase and is just something I've been trying myself 
 
 ## Version
 
-Current plugin version: `1.3.1.0`
+Current plugin version: `1.6.0.0`
 
 ## Features
 
@@ -64,6 +64,12 @@ Example (from my own seedrift nina plugin) showing frames (circles) drifting, Se
 - Plugin identity GUID is stable and must not be changed after publish.
 - Existing dependency warnings (for some transitive packages) may appear at build time, but Release builds succeed.
 - The dither uses absolute mount slewing — NINA's mount-level settle time applies after each slew.
+
+## Note
+
+Hopefully ZWO can address what some of us have found appear to be dithering issues (e.g. not using both RA and DEC axes effectively). If you experience dithering problems in the Seestar app or in the NINA Seestar ASCOM Alpaca setup, it's always best to report them so ZWO is aware.
+
+This plugin presents a basic, alternative way to get some RA and DEC dithering for Seestars, and is hopefully a temporary measure until ZWO can address it long-term.
 
 ## Support
 

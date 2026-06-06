@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.6.0] - 2026-06-06
+
+### Added
+- "Note" section in README (before Support/Ko-fi links) clarifying dithering limitations and the plugin's role as a temporary workaround.
+- Same note added to plugin `LongDescription` metadata, visible in NINA's plugin options panel.
+
+### Changed
+- Bumped version to 1.6.0.
+
+---
+
 ## [1.5.0] - 2026-06-01
 
 ### Added
@@ -73,6 +84,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+[1.6.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.6.0
 [1.5.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.5.0
 [1.4.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.4.0
 [1.3.1]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.3.1
