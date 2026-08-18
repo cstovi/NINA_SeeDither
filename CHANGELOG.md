@@ -6,6 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+## [1.7.0] - 2026-08-18
+
+### Added
+- Plugin-manager zip packaging: the release workflow now produces a versioned zip (NINA plugin manager format) plus SHA256 sidecar.
+
+### Changed
+- Bumped version to 1.7.0.
+
+---
+
 ## [1.6.0] - 2026-06-06
 
 ### Added
@@ -84,6 +94,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ---
 
+[1.7.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.7.0
 [1.6.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.6.0
 [1.5.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.5.0
 [1.4.0]: https://github.com/cstovi/NINA_SeeDither/releases/tag/v1.4.0

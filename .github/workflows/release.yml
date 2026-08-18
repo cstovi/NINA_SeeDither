@@ -1,4 +1,4 @@
-# Cut a release by pushing an annotated tag: git tag v1.6.0 && git push origin v1.6.0
+# Cut a release by pushing an annotated tag: git tag v1.7.0 && git push origin v1.7.0
 # (Version / CHANGELOG should already match in the repo per release process.)
 # Produces a versioned zip (NINA plugin manager format) + SHA256 sidecar.
 

@@ -8,7 +8,7 @@ Please note this is in test phase and is just something I've been trying myself 
 
 ## Version
 
-Current plugin version: `1.6.0.0`
+Current plugin version: `1.7.0.0`
 
 ## Features
 
