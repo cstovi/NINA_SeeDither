@@ -1,0 +1,53 @@
+# Cut a release by pushing an annotated tag: git tag v1.6.0 && git push origin v1.6.0
+# (Version / CHANGELOG should already match in the repo per release process.)
+# Produces a versioned zip (NINA plugin manager format) + SHA256 sidecar.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore "NINA.Plugin.SeeDither/NINA.Plugin.SeeDither.csproj"
+
+      - name: Build
+        run: dotnet build "NINA.Plugin.SeeDither/NINA.Plugin.SeeDither.csproj" --configuration Release --no-restore
+
+      - name: Create release zip + sha256
+        id: pack
+        shell: pwsh
+        run: |
+          ./scripts/Build-ReleaseZip.ps1
+          $zip = Get-ChildItem -Path artifacts -Filter 'NINA.Plugin.SeeDither-*.zip' | Select-Object -First 1
+          if (-not $zip) { throw 'No zip produced' }
+          "zip=$($zip.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          $sha = Get-ChildItem -Path artifacts -Filter 'NINA.Plugin.SeeDither-*.zip.sha256' | Select-Object -First 1
+          if (-not $sha) { throw 'No sha256 produced' }
+          "sha=$($sha.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ steps.pack.outputs.zip }}
+            ${{ steps.pack.outputs.sha }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
