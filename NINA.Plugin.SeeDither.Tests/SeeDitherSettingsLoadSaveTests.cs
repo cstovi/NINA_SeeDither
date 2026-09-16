@@ -4,77 +4,132 @@ using Newtonsoft.Json;
 
 namespace NINA.Plugin.SeeDither.Tests;
 
-public class SeeDitherSettingsLoadSaveTests {
-    [Fact]
-    public void Save_CreatesJsonFile() {
-        // Arrange
-        var tempDir = Path.Combine(Path.GetTempPath(), "SeeDitherTests", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDir);
-        var settingsPath = Path.Combine(tempDir, "settings.json");
+public class SeeDitherSettingsLoadSaveTests : IDisposable {
+    private readonly string _tempDir;
+    private readonly string _settingsPath;
+    private readonly string _previousOverride;
 
-        try {
-            var settings = new SeeDitherSettings();
-            settings.MinOffsetArcsec = 100;
-            settings.MaxOffsetArcsec = 300;
-            settings.ExposuresBetween = 5;
-            settings.PlateScaleArcSecPerPx = 2.5;
+    public SeeDitherSettingsLoadSaveTests() {
+        _tempDir = Path.Combine(Path.GetTempPath(), "SeeDitherTests", Guid.NewGuid().ToString());
+        Directory.CreateDirectory(_tempDir);
+        _settingsPath = Path.Combine(_tempDir, "settings.json");
+        _previousOverride = SeeDitherSettings.SettingsPathOverride;
+        SeeDitherSettings.SettingsPathOverride = _settingsPath;
+    }
 
-            // Note: We can't easily test Save() directly since it uses a hardcoded path
-            // This test demonstrates the structure we'd need if Save() accepted a path parameter
-            // For now, we'll test the serialization format manually
-
-            var json = JsonConvert.SerializeObject(settings, Formatting.Indented);
-            File.WriteAllText(settingsPath, json);
-
-            // Act
-            var loadedJson = File.ReadAllText(settingsPath);
-            dynamic? loaded = JsonConvert.DeserializeObject(loadedJson);
-
-            // Assert
-            Assert.NotNull(loaded);
-            Assert.Equal(100, (int)loaded.MinOffsetArcsec);
-            Assert.Equal(300, (int)loaded.MaxOffsetArcsec);
-            Assert.Equal(5, (int)loaded.ExposuresBetween);
-            Assert.Equal(2.5, (double)loaded.PlateScaleArcSecPerPx);
-        } finally {
-            if (Directory.Exists(tempDir)) {
-                Directory.Delete(tempDir, true);
-            }
+    public void Dispose() {
+        SeeDitherSettings.SettingsPathOverride = _previousOverride;
+        if (Directory.Exists(_tempDir)) {
+            Directory.Delete(_tempDir, true);
         }
+    }
+
+    [Fact]
+    public void Save_ThenLoad_RoundTripsSelectedScopeName() {
+        // Arrange
+        var settings = new SeeDitherSettings();
+        settings.MinOffsetArcsec = 100;
+        settings.MaxOffsetArcsec = 300;
+        settings.ExposuresBetween = 5;
+        settings.SelectedScopeName = "Seestar S50 Pro";
+
+        // Act
+        settings.Save();
+        var loaded = SeeDitherSettings.Load();
+
+        // Assert: Selector and everything else survives the round trip
+        Assert.Equal("Seestar S50 Pro", loaded.SelectedScopeName);
+        Assert.Equal(2.30, loaded.PlateScaleArcSecPerPx, 2);
+        Assert.Equal(100, loaded.MinOffsetArcsec);
+        Assert.Equal(300, loaded.MaxOffsetArcsec);
+        Assert.Equal(5, loaded.ExposuresBetween);
+    }
+
+    [Fact]
+    public void Save_CreatesJsonFileWithSelectorAndDerivedScale() {
+        // Arrange
+        var settings = new SeeDitherSettings();
+        settings.SelectedScopeName = "Seestar S50";
+
+        // Act
+        settings.Save();
+
+        // Assert: File exists and contains the persisted selector plus the
+        // plate scale derived from it
+        Assert.True(File.Exists(_settingsPath));
+        var loadedJson = File.ReadAllText(_settingsPath);
+        dynamic loaded = JsonConvert.DeserializeObject(loadedJson)!;
+
+        Assert.NotNull(loaded);
+        Assert.Equal("Seestar S50", (string)loaded.SelectedScopeName);
+        Assert.Equal(2.39, (double)loaded.PlateScaleArcSecPerPx, 2);
     }
 
     [Fact]
     public void Load_WithValidJson_RestoresSettings() {
         // Arrange
-        var tempDir = Path.Combine(Path.GetTempPath(), "SeeDitherTests", Guid.NewGuid().ToString());
-        Directory.CreateDirectory(tempDir);
-        var settingsPath = Path.Combine(tempDir, "settings.json");
+        var json = @"{
+            ""Enabled"": false,
+            ""ExposuresBetween"": 10,
+            ""MinOffsetArcsec"": 50,
+            ""MaxOffsetArcsec"": 250,
+            ""SelectedScopeName"": ""Seestar S50 Pro""
+        }";
+        File.WriteAllText(_settingsPath, json);
 
-        try {
-            var json = @"{
-                ""Enabled"": false,
-                ""ExposuresBetween"": 10,
-                ""MinOffsetArcsec"": 50,
-                ""MaxOffsetArcsec"": 250,
-                ""PlateScaleArcSecPerPx"": 1.5
-            }";
-            File.WriteAllText(settingsPath, json);
+        // Act
+        var loaded = SeeDitherSettings.Load();
 
-            // Act: Deserialize manually (since Load() uses hardcoded path)
-            var loaded = JsonConvert.DeserializeObject<dynamic>(json);
+        // Assert
+        Assert.False(loaded.Enabled);
+        Assert.Equal(10, loaded.ExposuresBetween);
+        Assert.Equal(50, loaded.MinOffsetArcsec);
+        Assert.Equal(250, loaded.MaxOffsetArcsec);
+        Assert.Equal("Seestar S50 Pro", loaded.SelectedScopeName);
+        Assert.Equal(2.30, loaded.PlateScaleArcSecPerPx, 2);
+    }
 
-            // Assert
-            Assert.NotNull(loaded);
-            Assert.False((bool)loaded.Enabled);
-            Assert.Equal(10, (int)loaded.ExposuresBetween);
-            Assert.Equal(50, (int)loaded.MinOffsetArcsec);
-            Assert.Equal(250, (int)loaded.MaxOffsetArcsec);
-            Assert.Equal(1.5, (double)loaded.PlateScaleArcSecPerPx);
-        } finally {
-            if (Directory.Exists(tempDir)) {
-                Directory.Delete(tempDir, true);
-            }
-        }
+    [Fact]
+    public void Load_WithOlderJsonMissingSelector_DefaultsToS30() {
+        // Arrange: JSON as an older version wrote it — camera-detected plate
+        // scale, no selector present
+        var json = @"{
+            ""Enabled"": true,
+            ""ExposuresBetween"": 2,
+            ""MinOffsetArcsec"": 20,
+            ""MaxOffsetArcsec"": 150,
+            ""PlateScaleArcSecPerPx"": 2.39
+        }";
+        File.WriteAllText(_settingsPath, json);
+
+        // Act
+        var loaded = SeeDitherSettings.Load();
+
+        // Assert: Gracefully falls back to the default scope (S30 / current default)
+        Assert.Equal("Seestar S30", loaded.SelectedScopeName);
+        Assert.Equal(3.99, loaded.PlateScaleArcSecPerPx, 2);
+        Assert.Equal(20, loaded.MinOffsetArcsec);
+        Assert.Equal(150, loaded.MaxOffsetArcsec);
+    }
+
+    [Fact]
+    public void Load_WithUnknownSelectorName_DefaultsToS30() {
+        // Arrange: Hand-edited or corrupt selector name
+        var json = @"{
+            ""Enabled"": true,
+            ""ExposuresBetween"": 2,
+            ""MinOffsetArcsec"": 20,
+            ""MaxOffsetArcsec"": 150,
+            ""SelectedScopeName"": ""Bogus telescope""
+        }";
+        File.WriteAllText(_settingsPath, json);
+
+        // Act
+        var loaded = SeeDitherSettings.Load();
+
+        // Assert: Unknown names normalize to the default scope
+        Assert.Equal("Seestar S30", loaded.SelectedScopeName);
+        Assert.Equal(3.99, loaded.PlateScaleArcSecPerPx, 2);
     }
 
     [Fact]
@@ -85,22 +140,19 @@ public class SeeDitherSettingsLoadSaveTests {
             ""ExposuresBetween"": 150,
             ""MinOffsetArcsec"": 600,
             ""MaxOffsetArcsec"": 700,
-            ""PlateScaleArcSecPerPx"": 150.0
+            ""SelectedScopeName"": ""Seestar S50""
         }";
+        File.WriteAllText(_settingsPath, json);
 
-        // Act: Deserialize and apply to settings
-        var dto = JsonConvert.DeserializeObject<dynamic>(json);
-        var settings = new SeeDitherSettings();
-        settings.ExposuresBetween = (int)dto.ExposuresBetween;
-        settings.MinOffsetArcsec = (int)dto.MinOffsetArcsec;
-        settings.MaxOffsetArcsec = (int)dto.MaxOffsetArcsec;
-        settings.PlateScaleArcSecPerPx = (double)dto.PlateScaleArcSecPerPx;
+        // Act
+        var loaded = SeeDitherSettings.Load();
 
         // Assert: Values should be clamped
-        Assert.Equal(100, settings.ExposuresBetween); // Max is 100
-        Assert.Equal(500, settings.MinOffsetArcsec); // Max is 500
-        Assert.Equal(500, settings.MaxOffsetArcsec); // Max is 500
-        Assert.Equal(100.0, settings.PlateScaleArcSecPerPx); // Max is 100.0
+        Assert.Equal(100, loaded.ExposuresBetween); // Max is 100
+        Assert.Equal(500, loaded.MinOffsetArcsec); // Max is 500
+        Assert.Equal(500, loaded.MaxOffsetArcsec); // Max is 500
+        Assert.Equal("Seestar S50", loaded.SelectedScopeName);
+        Assert.Equal(2.39, loaded.PlateScaleArcSecPerPx, 2);
     }
 
     [Fact]
@@ -111,39 +163,33 @@ public class SeeDitherSettingsLoadSaveTests {
             ""ExposuresBetween"": 2,
             ""MinOffsetArcsec"": 300,
             ""MaxOffsetArcsec"": 150,
-            ""PlateScaleArcSecPerPx"": 3.99
+            ""SelectedScopeName"": ""Seestar S30 Pro""
         }";
+        File.WriteAllText(_settingsPath, json);
 
-        // Act: Deserialize and apply to settings
-        var dto = JsonConvert.DeserializeObject<dynamic>(json);
-        var settings = new SeeDitherSettings();
-        
-        // Simulate Load() logic: set Min first, then Max
-        // When Max is set to 150, it should auto-drop Min to 150
-        settings.MinOffsetArcsec = (int)dto.MinOffsetArcsec; // Sets to 300
-        settings.MaxOffsetArcsec = (int)dto.MaxOffsetArcsec; // Sets to 150, should drop Min to 150
+        // Act
+        var loaded = SeeDitherSettings.Load();
 
         // Assert: Min should be adjusted to match Max
-        Assert.Equal(150, settings.MinOffsetArcsec);
-        Assert.Equal(150, settings.MaxOffsetArcsec);
+        Assert.Equal(150, loaded.MinOffsetArcsec);
+        Assert.Equal(150, loaded.MaxOffsetArcsec);
+        Assert.Equal("Seestar S30 Pro", loaded.SelectedScopeName);
     }
 
     [Fact]
-    public void SerializationRoundTrip_PreservesAllValues() {
+    public void SerializationRoundTrip_PreservesSelectorAndDerivedScale() {
         // Arrange
         var original = new SeeDitherSettings();
         original.Enabled = false;
         original.ExposuresBetween = 7;
-        original.PlateScaleArcSecPerPx = 2.39;
+        original.SelectedScopeName = "Seestar S50";
         // Use Text properties to set Min/Max (since internal setters aren't accessible in serialization)
         original.MinOffsetArcsecText = "75";
         original.MaxOffsetArcsecText = "225";
 
         // Act: Serialize to JSON
         var json = JsonConvert.SerializeObject(original);
-        
-        // Deserialize to dynamic to check JSON structure (not full object deserialization)
-        var dto = JsonConvert.DeserializeObject<dynamic>(json);
+        var dto = JsonConvert.DeserializeObject<dynamic>(json)!;
 
         // Assert: Verify JSON contains expected values
         Assert.NotNull(dto);
@@ -151,37 +197,33 @@ public class SeeDitherSettingsLoadSaveTests {
         Assert.Equal(7, (int)dto.ExposuresBetween);
         Assert.Equal(75, (int)dto.MinOffsetArcsec);
         Assert.Equal(225, (int)dto.MaxOffsetArcsec);
-        Assert.Equal(2.39, (double)dto.PlateScaleArcSecPerPx);
+        Assert.Equal("Seestar S50", (string)dto.SelectedScopeName);
+        Assert.Equal(2.39, (double)dto.PlateScaleArcSecPerPx, 2);
     }
 
     [Fact]
     public void Load_WithMissingFile_ReturnsDefaults() {
-        // This test documents expected behavior when settings file doesn't exist
-        // The actual Load() method would return a new instance with defaults
-
-        // Arrange
-        var defaults = new SeeDitherSettings();
+        // Act: No settings file exists
+        var loaded = SeeDitherSettings.Load();
 
         // Assert: Verify default values
-        Assert.True(defaults.Enabled);
-        Assert.Equal(2, defaults.ExposuresBetween);
-        Assert.Equal(20, defaults.MinOffsetArcsec);
-        Assert.Equal(150, defaults.MaxOffsetArcsec);
-        Assert.Equal(3.99, defaults.PlateScaleArcSecPerPx);
+        Assert.True(loaded.Enabled);
+        Assert.Equal(2, loaded.ExposuresBetween);
+        Assert.Equal(20, loaded.MinOffsetArcsec);
+        Assert.Equal(150, loaded.MaxOffsetArcsec);
+        Assert.Equal("Seestar S30", loaded.SelectedScopeName);
+        Assert.Equal(3.99, loaded.PlateScaleArcSecPerPx, 2);
     }
 
     [Fact]
     public void Load_WithInvalidJson_ReturnsDefaults() {
         // Arrange: Invalid JSON
-        var invalidJson = "{ this is not valid json }";
+        File.WriteAllText(_settingsPath, "{ this is not valid json }");
 
         // Act & Assert: Should not throw, should return defaults
-        try {
-            var result = JsonConvert.DeserializeObject<SeeDitherSettings>(invalidJson);
-            Assert.Fail("Should have thrown JsonException");
-        } catch (JsonException) {
-            // Expected - in actual Load() this would be caught and defaults returned
-            Assert.True(true);
-        }
+        var loaded = SeeDitherSettings.Load();
+        Assert.True(loaded.Enabled);
+        Assert.Equal("Seestar S30", loaded.SelectedScopeName);
+        Assert.Equal(3.99, loaded.PlateScaleArcSecPerPx, 2);
     }
 }

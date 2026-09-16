@@ -15,7 +15,7 @@ namespace NINA.Plugin.SeeDither {
         private int _exposuresBetween = 2;
         private int _minOffsetArcsec = 20;
         private int _maxOffsetArcsec = 150;
-        private double _plateScaleArcSecPerPx = 3.99;
+        private string _selectedScopeName = SeestarScope.Default.DisplayName;
         private string _minOffsetArcsecText = "20";
         private string _maxOffsetArcsecText = "150";
 
@@ -125,19 +125,31 @@ namespace NINA.Plugin.SeeDither {
             }
         }
 
-        public double PlateScaleArcSecPerPx {
-            get => _plateScaleArcSecPerPx;
+        /// <summary>
+        /// The persisted Seestar scope selection. The scope fully determines
+        /// <see cref="PlateScaleArcSecPerPx"/>, so the selector and the plate
+        /// scale can never disagree.
+        /// </summary>
+        public string SelectedScopeName {
+            get => _selectedScopeName;
             set {
-                var clamped = Math.Max(0.01, Math.Min(100.0, value));
-                if (_plateScaleArcSecPerPx != clamped) {
-                    _plateScaleArcSecPerPx = clamped;
+                var normalized = SeestarScope.FromName(value).DisplayName;
+                if (_selectedScopeName != normalized) {
+                    _selectedScopeName = normalized;
                     OnPropertyChanged();
+                    OnPropertyChanged(nameof(PlateScaleArcSecPerPx));
                     OnPropertyChanged(nameof(MinOffsetPixels));
                     OnPropertyChanged(nameof(MaxOffsetPixels));
                     Save();
                 }
             }
         }
+
+        /// <summary>
+        /// Plate scale derived from the selected Seestar scope. Used only for
+        /// the ~px pixel estimates in the settings UI; dithering uses arcsec.
+        /// </summary>
+        public double PlateScaleArcSecPerPx => SeestarScope.FromName(_selectedScopeName).PlateScaleArcSecPerPx;
 
         public double MinOffsetPixels => MinOffsetArcsec / PlateScaleArcSecPerPx;
 
@@ -149,7 +161,13 @@ namespace NINA.Plugin.SeeDither {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
-        private static readonly string SettingsPath = Path.Combine(NINA.Core.Utility.CoreUtil.APPLICATIONTEMPPATH, "SeeDither", "settings.json");
+        /// <summary>
+        /// Test hook: when set, Save()/Load() use this path instead of the
+        /// real NINA temp location. Leave null in production.
+        /// </summary>
+        internal static string SettingsPathOverride;
+
+        private static string SettingsPath => SettingsPathOverride ?? Path.Combine(NINA.Core.Utility.CoreUtil.APPLICATIONTEMPPATH, "SeeDither", "settings.json");
         private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings {
             Formatting = Formatting.Indented,
             ContractResolver = new DefaultContractResolver(),
@@ -170,7 +188,10 @@ namespace NINA.Plugin.SeeDither {
                         if (settings._minOffsetArcsec > settings._maxOffsetArcsec) {
                             settings._minOffsetArcsec = settings._maxOffsetArcsec;
                         }
-                        settings._plateScaleArcSecPerPx = Math.Max(0.01, Math.Min(100.0, dto.PlateScaleArcSecPerPx));
+                        // Older JSON has no selector (plate scale was camera-detected).
+                        // Fall back to the default scope; unknown names are also
+                        // normalized so the selector is always one of the known models.
+                        settings._selectedScopeName = SeestarScope.FromName(dto.SelectedScopeName).DisplayName;
                         settings._minOffsetArcsecText = settings._minOffsetArcsec.ToString();
                         settings._maxOffsetArcsecText = settings._maxOffsetArcsec.ToString();
                         return settings;
@@ -196,12 +217,15 @@ namespace NINA.Plugin.SeeDither {
         }
 
         // Bare DTO for deserialization — no validation, no side effects.
+        // SelectedScopeName is the persisted selector; older JSON without it
+        // falls back to the default scope on load. PlateScaleArcSecPerPx is
+        // derived from the selector and no longer persisted separately.
         private class SettingsDto {
             public bool Enabled { get; set; } = true;
             public int ExposuresBetween { get; set; } = 2;
             public int MinOffsetArcsec { get; set; } = 20;
             public int MaxOffsetArcsec { get; set; } = 150;
-            public double PlateScaleArcSecPerPx { get; set; } = 3.99;
+            public string SelectedScopeName { get; set; } = SeestarScope.Default.DisplayName;
         }
 
         public void Save() {
@@ -223,18 +247,5 @@ namespace NINA.Plugin.SeeDither {
         public void SuspendSave() => _suspendSave = true;
 
         public void ResumeSave() => _suspendSave = false;
-
-        public void LoadPlateScaleFromCamera(Func<double> getPlateScale) {
-            try {
-                var detected = getPlateScale();
-                if (detected > 0.01 && detected < 100.0) {
-                    _plateScaleArcSecPerPx = detected;
-                    OnPropertyChanged(nameof(MinOffsetPixels));
-                    OnPropertyChanged(nameof(MaxOffsetPixels));
-                }
-            } catch (Exception ex) {
-                SeeDitherLog.Error("LoadPlateScaleFromCamera failed", ex);
-            }
-        }
     }
 }

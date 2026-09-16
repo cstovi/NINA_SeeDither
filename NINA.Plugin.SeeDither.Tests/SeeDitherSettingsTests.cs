@@ -173,21 +173,70 @@ public class SeeDitherSettingsTests {
     }
 
     [Fact]
-    public void PlateScaleArcSecPerPx_ClampsToValidRange() {
+    public void PlateScaleArcSecPerPx_IsDerivedFromSelectedScope() {
         // Arrange
         var settings = new SeeDitherSettings();
 
-        // Act & Assert: Below minimum
-        settings.PlateScaleArcSecPerPx = 0.001;
-        Assert.Equal(0.01, settings.PlateScaleArcSecPerPx);
-
-        // Act & Assert: Above maximum
-        settings.PlateScaleArcSecPerPx = 150.0;
-        Assert.Equal(100.0, settings.PlateScaleArcSecPerPx);
-
-        // Act & Assert: Valid value
-        settings.PlateScaleArcSecPerPx = 3.99;
+        // Assert: Default scope is Seestar S30
+        Assert.Equal("Seestar S30", settings.SelectedScopeName);
         Assert.Equal(3.99, settings.PlateScaleArcSecPerPx);
+
+        // Act & Assert: Each scope maps to its documented plate scale
+        settings.SelectedScopeName = "Seestar S30 Pro";
+        Assert.Equal(3.74, settings.PlateScaleArcSecPerPx);
+
+        settings.SelectedScopeName = "Seestar S50";
+        Assert.Equal(2.39, settings.PlateScaleArcSecPerPx);
+
+        settings.SelectedScopeName = "Seestar S50 Pro";
+        Assert.Equal(2.30, settings.PlateScaleArcSecPerPx);
+    }
+
+    [Fact]
+    public void SelectedScopeName_WithUnknownName_NormalizesToDefault() {
+        // Arrange
+        var settings = new SeeDitherSettings();
+
+        // Act
+        settings.SelectedScopeName = "Some Other Camera";
+
+        // Assert: Falls back to the default scope (Seestar S30)
+        Assert.Equal("Seestar S30", settings.SelectedScopeName);
+        Assert.Equal(3.99, settings.PlateScaleArcSecPerPx);
+    }
+
+    [Fact]
+    public void SelectedScopeName_WhenChanged_RaisesPropertyChangedForPixelEstimates() {
+        // Arrange
+        var settings = new SeeDitherSettings();
+        var changed = new List<string>();
+        settings.PropertyChanged += (s, e) => changed.Add(e.PropertyName ?? string.Empty);
+
+        // Act
+        settings.SelectedScopeName = "Seestar S50";
+
+        // Assert: The selector, its derived scale, and both estimates notify
+        Assert.Contains(nameof(SeeDitherSettings.SelectedScopeName), changed);
+        Assert.Contains(nameof(SeeDitherSettings.PlateScaleArcSecPerPx), changed);
+        Assert.Contains(nameof(SeeDitherSettings.MinOffsetPixels), changed);
+        Assert.Contains(nameof(SeeDitherSettings.MaxOffsetPixels), changed);
+    }
+
+    [Fact]
+    public void SelectedScopeName_WhenChanged_UpdatesPixelEstimates() {
+        // Arrange
+        var settings = new SeeDitherSettings();
+        settings.MinOffsetArcsec = 100;
+        settings.MaxOffsetArcsec = 200;
+        var minBefore = settings.MinOffsetPixels;
+
+        // Act
+        settings.SelectedScopeName = "Seestar S50"; // 2.39 arcsec/px
+
+        // Assert: Estimates recompute against the new plate scale
+        Assert.NotEqual(minBefore, settings.MinOffsetPixels);
+        Assert.Equal(100.0 / 2.39, settings.MinOffsetPixels, 6);
+        Assert.Equal(200.0 / 2.39, settings.MaxOffsetPixels, 6);
     }
 
     [Fact]
@@ -195,13 +244,13 @@ public class SeeDitherSettingsTests {
         // Arrange
         var settings = new SeeDitherSettings();
         settings.MinOffsetArcsec = 100;
-        settings.PlateScaleArcSecPerPx = 2.0;
+        settings.SelectedScopeName = "Seestar S50"; // 2.39 arcsec/px
 
         // Act
         var pixels = settings.MinOffsetPixels;
 
-        // Assert: 100 arcsec / 2.0 arcsec/px = 50 px
-        Assert.Equal(50.0, pixels, 6);
+        // Assert: 100 arcsec / 2.39 arcsec/px ≈ 41.84 px
+        Assert.Equal(100.0 / 2.39, pixels, 6);
     }
 
     [Fact]
@@ -209,29 +258,32 @@ public class SeeDitherSettingsTests {
         // Arrange
         var settings = new SeeDitherSettings();
         settings.MaxOffsetArcsec = 200;
-        settings.PlateScaleArcSecPerPx = 4.0;
+        settings.SelectedScopeName = "Seestar S30 Pro"; // 3.74 arcsec/px
 
         // Act
         var pixels = settings.MaxOffsetPixels;
 
-        // Assert: 200 arcsec / 4.0 arcsec/px = 50 px
-        Assert.Equal(50.0, pixels, 6);
+        // Assert: 200 arcsec / 3.74 arcsec/px ≈ 53.48 px
+        Assert.Equal(200.0 / 3.74, pixels, 6);
     }
 
     [Theory]
-    [InlineData("SEESTAR MyScope S50 PRO Telephoto camera", 2.30)]
-    [InlineData("SEESTAR MyScope S50PRO Telephoto camera", 2.30)]
-    [InlineData("SEESTAR MyScope S50-Pro Telephoto camera", 2.30)]
-    [InlineData("SEESTAR MyScope S50_Pro Telephoto camera", 2.30)]
-    [InlineData("SEESTAR MyScope S30 PRO Telephoto camera", 3.74)]
-    [InlineData("SEESTAR MyScope S30PRO Telephoto camera", 3.74)]
-    [InlineData("SEESTAR MyScope S30-Pro Telephoto camera", 3.74)]
-    [InlineData("SEESTAR MyScope S30_Pro Telephoto camera", 3.74)]
-    [InlineData("SEESTAR MyScope S50 Telephoto camera", 2.39)]
-    [InlineData("SEESTAR MyScope S30 Telephoto camera", 3.99)]
-    [InlineData("Unknown camera", 3.99)]
-    [InlineData(null, 3.99)]
-    public void GetPlateScaleFromCameraName_DetectsSeestarModels(string? cameraName, double expectedPlateScale) {
-        Assert.Equal(expectedPlateScale, SeeDitherPlugin.GetPlateScaleFromCameraName(cameraName), 2);
+    [InlineData("Seestar S30", 3.99)]
+    [InlineData("Seestar S30 Pro", 3.74)]
+    [InlineData("Seestar S50", 2.39)]
+    [InlineData("Seestar S50 Pro", 2.30)]
+    public void SeestarScope_FromName_MapsToPlateScale(string scopeName, double expectedPlateScale) {
+        Assert.Equal(expectedPlateScale, SeestarScope.FromName(scopeName).PlateScaleArcSecPerPx, 2);
+    }
+
+    [Fact]
+    public void SeestarScope_FromName_UnknownName_ReturnsDefault() {
+        Assert.Equal(SeestarScope.Default.DisplayName, SeestarScope.FromName("Not a Seestar").DisplayName);
+        Assert.Equal(3.99, SeestarScope.FromName("Not a Seestar").PlateScaleArcSecPerPx, 2);
+    }
+
+    [Fact]
+    public void SeestarScope_FromName_NullName_ReturnsDefault() {
+        Assert.Equal(SeestarScope.Default.DisplayName, SeestarScope.FromName(null).DisplayName);
     }
 }

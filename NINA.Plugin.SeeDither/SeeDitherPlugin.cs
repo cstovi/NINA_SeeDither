@@ -1,8 +1,6 @@
 using System;
 using System.ComponentModel.Composition;
-using System.Threading.Tasks;
 using System.Windows;
-using NINA.Equipment.Interfaces.Mediator;
 using NINA.Plugin;
 using NINA.Plugin.Interfaces;
 using NINA.Plugin.SeeDither.Utility;
@@ -16,20 +14,14 @@ namespace NINA.Plugin.SeeDither {
 
         public static SeeDitherSettings Settings => _settings;
         public SeeDitherSettings SettingsInstance { get; }
-        public ICameraMediator CameraMediator { get; }
 
-        [ImportingConstructor]
-        public SeeDitherPlugin(ICameraMediator cameraMediator) {
+        public SeeDitherPlugin() {
             try {
-                CameraMediator = cameraMediator;
                 _settings = SeeDitherSettings.Load();
-                _settings.LoadPlateScaleFromCamera(GetPlateScaleFromCamera);
                 SettingsInstance = _settings;
                 var uri = new Uri("pack://application:,,,/NINA.Plugin.SeeDither;component/Resources.xaml");
                 _resourceDictionary = new ResourceDictionary { Source = uri };
                 Application.Current.Resources.MergedDictionaries.Add(_resourceDictionary);
-
-                CameraMediator.Connected += OnCameraConnected;
             } catch (Exception ex) {
                 SeeDitherLog.Error("Plugin initialization failed", ex);
             }
@@ -39,7 +31,6 @@ namespace NINA.Plugin.SeeDither {
             if (_disposed) return;
             _disposed = true;
             try {
-                CameraMediator.Connected -= OnCameraConnected;
                 if (_resourceDictionary != null) {
                     Application.Current.Resources.MergedDictionaries.Remove(_resourceDictionary);
                 }
@@ -49,36 +40,5 @@ namespace NINA.Plugin.SeeDither {
         }
 
         public override string ToString() => "SeeDither";
-
-        private async Task OnCameraConnected(object sender, EventArgs e) {
-            await Task.Run(() => {
-                _settings.LoadPlateScaleFromCamera(GetPlateScaleFromCamera);
-            });
-        }
-
-        private double GetPlateScaleFromCamera() {
-            try {
-                var info = CameraMediator?.GetInfo();
-                if (info == null || !info.Connected) return 3.99;
-                return GetPlateScaleFromCameraName(info.Name);
-            } catch (Exception ex) {
-                SeeDitherLog.Error("GetPlateScaleFromCamera failed", ex);
-                return 3.99;
-            }
-        }
-
-        internal static double GetPlateScaleFromCameraName(string name) {
-            var compact = (name ?? "")
-                .ToUpperInvariant()
-                .Replace(" ", "")
-                .Replace("-", "")
-                .Replace("_", "");
-
-            if (compact.Contains("S50PRO")) return 2.30;
-            if (compact.Contains("S30PRO")) return 3.74;
-            if (compact.Contains("S50")) return 2.39;
-            if (compact.Contains("S30")) return 3.99;
-            return 3.99;
-        }
     }
 }

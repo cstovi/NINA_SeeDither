@@ -40,10 +40,20 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="Min Offset (arcsec):" VerticalAlignment="Center" Margin="0,0,8,4"/>
-                <TextBox Grid.Row="0" Grid.Column="1" ToolTip="Valid range: 1–500 arcseconds" VerticalAlignment="Center" Margin="0,0,0,4" PreviewKeyDown="TextBox_PreviewKeyDown">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="Seestar scope:" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <ComboBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2"
+                          ToolTip="Used to estimate the ~px offset range only; dithering itself uses arcseconds"
+                          ItemsSource="{Binding Source={x:Static local:SeestarScope.All}}"
+                          DisplayMemberPath="DisplayName"
+                          SelectedValuePath="DisplayName"
+                          SelectedValue="{Binding SettingsInstance.SelectedScopeName, Mode=TwoWay}"
+                          VerticalAlignment="Center" HorizontalAlignment="Left" MinWidth="140" Margin="0,0,0,4"/>
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Min Offset (arcsec):" VerticalAlignment="Center" Margin="0,0,8,4"/>
+                <TextBox Grid.Row="1" Grid.Column="1" ToolTip="Valid range: 1–500 arcseconds" VerticalAlignment="Center" Margin="0,0,0,4" PreviewKeyDown="TextBox_PreviewKeyDown">
                     <TextBox.Text>
                         <Binding Path="SettingsInstance.MinOffsetArcsecText" Mode="TwoWay" UpdateSourceTrigger="LostFocus">
                             <Binding.ValidationRules>
@@ -52,10 +62,10 @@
                         </Binding>
                     </TextBox.Text>
                 </TextBox>
-                <TextBlock Grid.Row="0" Grid.Column="2" Text="{Binding SettingsInstance.MinOffsetPixels, StringFormat='~{0:F0} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,0,0,4" FontSize="11"/>
+                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SettingsInstance.MinOffsetPixels, StringFormat='~{0:F0} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,0,0,4" FontSize="11"/>
 
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="Max Offset (arcsec):" VerticalAlignment="Center" Margin="0,4,8,4"/>
-                <TextBox Grid.Row="1" Grid.Column="1" ToolTip="Valid range: 1–500 arcseconds" VerticalAlignment="Center" Margin="0,4,0,4" PreviewKeyDown="TextBox_PreviewKeyDown">
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="Max Offset (arcsec):" VerticalAlignment="Center" Margin="0,4,8,4"/>
+                <TextBox Grid.Row="2" Grid.Column="1" ToolTip="Valid range: 1–500 arcseconds" VerticalAlignment="Center" Margin="0,4,0,4" PreviewKeyDown="TextBox_PreviewKeyDown">
                     <TextBox.Text>
                         <Binding Path="SettingsInstance.MaxOffsetArcsecText" Mode="TwoWay" UpdateSourceTrigger="LostFocus">
                             <Binding.ValidationRules>
@@ -64,7 +74,7 @@
                         </Binding>
                     </TextBox.Text>
                 </TextBox>
-                <TextBlock Grid.Row="1" Grid.Column="2" Text="{Binding SettingsInstance.MaxOffsetPixels, StringFormat='~{0:F0} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4" FontSize="11"/>
+                <TextBlock Grid.Row="2" Grid.Column="2" Text="{Binding SettingsInstance.MaxOffsetPixels, StringFormat='~{0:F0} px', Mode=OneWay}" Foreground="#888" VerticalAlignment="Center" Margin="8,4,0,4" FontSize="11"/>
 
             </Grid>
         </StackPanel>
