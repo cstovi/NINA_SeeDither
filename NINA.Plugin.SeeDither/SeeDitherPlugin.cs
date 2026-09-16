@@ -60,15 +60,25 @@ namespace NINA.Plugin.SeeDither {
             try {
                 var info = CameraMediator?.GetInfo();
                 if (info == null || !info.Connected) return 3.99;
-                var name = info.Name ?? "";
-                var upper = name.ToUpperInvariant();
-                if (upper.Contains("S50")) return 2.39;
-                if (upper.Contains("S30")) return 3.99;
-                return 3.99;
+                return GetPlateScaleFromCameraName(info.Name);
             } catch (Exception ex) {
                 SeeDitherLog.Error("GetPlateScaleFromCamera failed", ex);
                 return 3.99;
             }
+        }
+
+        internal static double GetPlateScaleFromCameraName(string name) {
+            var compact = (name ?? "")
+                .ToUpperInvariant()
+                .Replace(" ", "")
+                .Replace("-", "")
+                .Replace("_", "");
+
+            if (compact.Contains("S50PRO")) return 2.30;
+            if (compact.Contains("S30PRO")) return 3.74;
+            if (compact.Contains("S50")) return 2.39;
+            if (compact.Contains("S30")) return 3.99;
+            return 3.99;
         }
     }
 }

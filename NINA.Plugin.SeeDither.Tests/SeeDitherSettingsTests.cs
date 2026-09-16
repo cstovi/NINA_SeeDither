@@ -217,4 +217,21 @@ public class SeeDitherSettingsTests {
         // Assert: 200 arcsec / 4.0 arcsec/px = 50 px
         Assert.Equal(50.0, pixels, 6);
     }
+
+    [Theory]
+    [InlineData("SEESTAR MyScope S50 PRO Telephoto camera", 2.30)]
+    [InlineData("SEESTAR MyScope S50PRO Telephoto camera", 2.30)]
+    [InlineData("SEESTAR MyScope S50-Pro Telephoto camera", 2.30)]
+    [InlineData("SEESTAR MyScope S50_Pro Telephoto camera", 2.30)]
+    [InlineData("SEESTAR MyScope S30 PRO Telephoto camera", 3.74)]
+    [InlineData("SEESTAR MyScope S30PRO Telephoto camera", 3.74)]
+    [InlineData("SEESTAR MyScope S30-Pro Telephoto camera", 3.74)]
+    [InlineData("SEESTAR MyScope S30_Pro Telephoto camera", 3.74)]
+    [InlineData("SEESTAR MyScope S50 Telephoto camera", 2.39)]
+    [InlineData("SEESTAR MyScope S30 Telephoto camera", 3.99)]
+    [InlineData("Unknown camera", 3.99)]
+    [InlineData(null, 3.99)]
+    public void GetPlateScaleFromCameraName_DetectsSeestarModels(string? cameraName, double expectedPlateScale) {
+        Assert.Equal(expectedPlateScale, SeeDitherPlugin.GetPlateScaleFromCameraName(cameraName), 2);
+    }
 }
