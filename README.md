@@ -28,7 +28,18 @@ Current plugin version: `1.7.0.0`
 
 ## Install
 
-Since SeeDither is not currently in the NINA plugin repository, install it manually:
+### Plugin repository (recommended)
+
+Install SeeDither from the combined See plugin repository:
+
+1. Open NINA **Options**.
+2. Go to **General**.
+3. In **Plugin Repositories**, click **+** and paste `https://cstovi.github.io/NINA_SeePlugins`.
+4. Open **Plugins**, install SeeDither, then restart NINA if prompted.
+
+### Manual DLL install
+
+Manual install is an alternative if you prefer not to use the repository:
 
 1. Create this folder if it does not exist:
    - `%LOCALAPPDATA%\NINA\Plugins\3.0.0\SeeDither\`
