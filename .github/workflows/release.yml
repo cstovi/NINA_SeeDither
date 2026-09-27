@@ -51,3 +51,16 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # After assets are published, tell NINA_SeePlugins to regenerate + redeploy
+      # the combined manifest. Requires the SEEPLUGINS_DISPATCH_TOKEN secret (a PAT
+      # with repo scope on cstovi/NINA_SeePlugins) in this repo's secrets. If the
+      # secret is absent, the release still publishes its assets but this step
+      # fails afterwards - do a manual dispatch/manifest refresh in that case
+      # (see NINA_SeePlugins MAINTENANCE.md).
+      - name: Notify NINA_SeePlugins to refresh
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.SEEPLUGINS_DISPATCH_TOKEN }}
+          repository: cstovi/NINA_SeePlugins
+          event-type: release
+          client-payload: '{"repo": "${{ github.repository }}", "ref": "${{ github.ref_name }}"}'
